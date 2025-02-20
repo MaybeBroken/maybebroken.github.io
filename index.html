@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Directory Listing</title>
+    <title>My GitHub Projects</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -12,31 +12,66 @@
         list-style-type: none;
       }
       li {
-        margin: 5px 0;
+        margin: 10px 0;
+      }
+      .repo-name {
+        font-weight: bold;
+      }
+      .commit-date {
+        color: gray;
       }
     </style>
   </head>
   <body>
-    <h1>Files in Directory</h1>
-    <ul id="file-list"></ul>
+    <h1>My GitHub Projects</h1>
+    <button id="show-projects-btn">Show Projects</button>
+    <div id="projects-panel" style="display: none;">
+      <h2>Projects</h2>
+      <ul id="repo-list"></ul>
+    </div>
 
     <script>
-      async function fetchFiles() {
+      document.getElementById('show-projects-btn').addEventListener('click', () => {
+        const panel = document.getElementById('projects-panel')
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none'
+      })
+
+      async function fetchRepos() {
         try {
-          const response = await fetch('/')
-          const files = await response.json()
-          const fileList = document.getElementById('file-list')
-          files.forEach(file => {
+          const username = 'MaybeBroken' // Replace with your GitHub username
+          const response = await fetch(
+            `https://api.github.com/users/${username}/repos`
+          )
+          const repos = await response.json()
+          const repoList = document.getElementById('repo-list')
+          repos.forEach(async repo => {
             const listItem = document.createElement('li')
-            listItem.textContent = file
-            fileList.appendChild(listItem)
+            const repoName = document.createElement('span')
+            repoName.className = 'repo-name'
+            repoName.textContent = repo.name
+            listItem.appendChild(repoName)
+
+            const commitResponse = await fetch(
+              repo.commits_url.replace('{/sha}', '')
+            )
+            const commits = await commitResponse.json()
+            if (commits.length > 0) {
+              const commitDate = document.createElement('span')
+              commitDate.className = 'commit-date'
+              commitDate.textContent = ` - Last commit: ${new Date(
+                commits[0].commit.author.date
+              ).toLocaleDateString()}`
+              listItem.appendChild(commitDate)
+            }
+
+            repoList.appendChild(listItem)
           })
         } catch (error) {
-          console.error('Error fetching files:', error)
+          console.error('Error fetching repositories:', error)
         }
       }
 
-      fetchFiles()
+      fetchRepos()
     </script>
   </body>
 </html>
