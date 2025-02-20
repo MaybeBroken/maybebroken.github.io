@@ -7,18 +7,46 @@
     <style>
       body {
         font-family: Arial, sans-serif;
+        background-color: black; /* Set page background to black */
+        color: white; /* Set text color to white for better contrast */
       }
       ul {
         list-style-type: none;
       }
       li {
         margin: 10px 0;
+        padding: 10px;
+        border: 1px solid white; /* Add border to create frame */
+        border-radius: 5px;
+        transition: background-color 0.3s, border-color 0.3s; /* Smooth transition for hover effect */
+      }
+      li:hover {
+        background-color: #333; /* Highlight frame on hover */
+        border-color: #4caf50; /* Change border color on hover */
       }
       .repo-name {
         font-weight: bold;
       }
       .commit-date {
         color: gray;
+      }
+      .commit-graph {
+        display: flex;
+        align-items: flex-end;
+        margin-top: 10px;
+        overflow-x: auto; /* Allow horizontal scrolling for more detailed dates */
+      }
+      .commit-bar {
+        width: 10px;
+        background-color: #4caf50;
+        margin-right: 2px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        writing-mode: vertical-rl; /* Rotate text for better readability */
+        text-orientation: mixed;
+        font-size: 10px;
+        color: black; /* Change text color to black */
       }
     </style>
   </head>
@@ -35,40 +63,70 @@
           )
           const repos = await response.json()
           const repoList = document.getElementById('repo-list')
-          repos.forEach(async repo => {
+
+          // Fetch commits for each repo and sort by last commit date
+          const reposWithCommits = await Promise.all(
+            repos.map(async repo => {
+              const commitResponse = await fetch(
+                repo.commits_url.replace('{/sha}', '')
+              )
+              const commits = await commitResponse.json()
+              return { ...repo, commits }
+            })
+          )
+          reposWithCommits.sort((a, b) => {
+            const dateA = new Date(a.commits[0]?.commit.author.date || 0)
+            const dateB = new Date(b.commits[0]?.commit.author.date || 0)
+            return dateB - dateA
+          })
+
+          reposWithCommits.forEach(repo => {
             const listItem = document.createElement('li')
             const repoName = document.createElement('span')
             repoName.className = 'repo-name'
             repoName.textContent = repo.name
             listItem.appendChild(repoName)
 
-            const commitResponse = await fetch(
-              repo.commits_url.replace('{/sha}', '')
-            )
-            const commits = await commitResponse.json()
-            if (commits.length > 0) {
+            if (repo.commits.length > 0) {
               const commitDate = document.createElement('span')
               commitDate.className = 'commit-date'
               commitDate.textContent = ` - Last commit: ${new Date(
-                commits[0].commit.author.date
+                repo.commits[0].commit.author.date
               ).toLocaleDateString()}`
               listItem.appendChild(commitDate)
 
               // Create commit history graph
               const commitGraph = document.createElement('div')
               commitGraph.className = 'commit-graph'
-              const commitCounts = commits.reduce((acc, commit) => {
-                const date = new Date(commit.commit.author.date).toLocaleDateString()
+              const commitCounts = repo.commits.reduce((acc, commit) => {
+                const date = new Date(
+                  commit.commit.author.date
+                ).toLocaleDateString()
                 acc[date] = (acc[date] || 0) + 1
                 return acc
               }, {})
-              const dates = Object.keys(commitCounts).sort()
-              dates.forEach(date => {
-                const bar = document.createElement('div')
-                bar.className = 'commit-bar'
-                bar.style.height = `${commitCounts[date] * 10}px`
-                bar.title = `${date}: ${commitCounts[date]} commits`
-                commitGraph.appendChild(bar)
+              const allDates = []
+              const startDate = new Date(
+                repo.commits[repo.commits.length - 1].commit.author.date
+              )
+              const endDate = new Date(repo.commits[0].commit.author.date)
+              for (
+                let d = startDate;
+                d <= endDate;
+                d.setDate(d.getDate() + 1)
+              ) {
+                allDates.push(new Date(d).toLocaleDateString())
+              }
+              allDates.forEach(date => {
+                if (commitCounts[date]) {
+                  // Only create bars for dates with commits
+                  const bar = document.createElement('div')
+                  bar.className = 'commit-bar'
+                  bar.style.height = `${commitCounts[date] * 10}px`
+                  bar.title = `${date}: ${commitCounts[date]} commits`
+                  bar.textContent = commitCounts[date] // Show the number of commits
+                  commitGraph.appendChild(bar)
+                }
               })
               listItem.appendChild(commitGraph)
             }
@@ -82,17 +140,5 @@
 
       fetchRepos()
     </script>
-    <style>
-      .commit-graph {
-        display: flex;
-        align-items: flex-end;
-        margin-top: 10px;
-      }
-      .commit-bar {
-        width: 10px;
-        background-color: #4caf50;
-        margin-right: 2px;
-      }
-    </style>
   </body>
 </html>
