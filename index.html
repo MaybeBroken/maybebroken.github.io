@@ -23,19 +23,10 @@
     </style>
   </head>
   <body>
-    <h1>My GitHub Projects</h1>
-    <button id="show-projects-btn">Show Projects</button>
-    <div id="projects-panel" style="display: none;">
-      <h2>Projects</h2>
-      <ul id="repo-list"></ul>
-    </div>
+    <h1>Projects</h1>
+    <ul id="repo-list"></ul>
 
     <script>
-      document.getElementById('show-projects-btn').addEventListener('click', () => {
-        const panel = document.getElementById('projects-panel')
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none'
-      })
-
       async function fetchRepos() {
         try {
           const username = 'MaybeBroken' // Replace with your GitHub username
@@ -62,6 +53,24 @@
                 commits[0].commit.author.date
               ).toLocaleDateString()}`
               listItem.appendChild(commitDate)
+
+              // Create commit history graph
+              const commitGraph = document.createElement('div')
+              commitGraph.className = 'commit-graph'
+              const commitCounts = commits.reduce((acc, commit) => {
+                const date = new Date(commit.commit.author.date).toLocaleDateString()
+                acc[date] = (acc[date] || 0) + 1
+                return acc
+              }, {})
+              const dates = Object.keys(commitCounts).sort()
+              dates.forEach(date => {
+                const bar = document.createElement('div')
+                bar.className = 'commit-bar'
+                bar.style.height = `${commitCounts[date] * 10}px`
+                bar.title = `${date}: ${commitCounts[date]} commits`
+                commitGraph.appendChild(bar)
+              })
+              listItem.appendChild(commitGraph)
             }
 
             repoList.appendChild(listItem)
@@ -73,5 +82,17 @@
 
       fetchRepos()
     </script>
+    <style>
+      .commit-graph {
+        display: flex;
+        align-items: flex-end;
+        margin-top: 10px;
+      }
+      .commit-bar {
+        width: 10px;
+        background-color: #4caf50;
+        margin-right: 2px;
+      }
+    </style>
   </body>
 </html>
