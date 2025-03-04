@@ -2,7 +2,7 @@
   <title>API v1</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="scripts.js" defer></script>
+  <script src="files.js" defer></script>
 </head>
 
 <body>
@@ -10,7 +10,7 @@
   <div id="api-docs"></div>
   <script>
     const apiDocs = document.getElementById('api-docs')
-    fetch('/api/v1')
+    fetch('https://maybebroken.github.io/api/v1')
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok')
