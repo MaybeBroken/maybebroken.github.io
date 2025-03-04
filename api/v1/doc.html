@@ -2,7 +2,6 @@
   <title>API v1</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="files.js" defer></script>
 </head>
 
 <body>
@@ -18,7 +17,7 @@
         return response.json()
       })
       .then(data => {
-        const endpoints = data.endpoints
+        const endpoints = data
         let html = '<h2>Available Endpoints</h2><ul>'
         endpoints.forEach(endpoint => {
           html += `<li><a href="${endpoint}">${endpoint}</a></li>`
