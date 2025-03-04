@@ -20,7 +20,7 @@
         const endpoints = data
         let html = '<h2>Available Endpoints</h2><ul>'
         endpoints.forEach(endpoint => {
-          html += `<li><a href="${endpoint}">${endpoint}</a></li>`
+          html += `<li><a href="${endpoint}" target="_blank">${endpoint}</a></li>`
         })
         html += '</ul>'
         apiDocs.innerHTML = html

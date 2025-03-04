@@ -1,24 +1,38 @@
 import os
 import sys
+import string
 
 rootPath = os.path.dirname(os.path.abspath(__file__))
 folderPath = os.path.join(rootPath, "api", "v1")
+auxFolderPath = None
 os.chdir(folderPath)
+
+
+def pathSafe(path):
+    newPath = ""
+    for char in path:
+        if char in string.printable:
+            newPath += char
+    return newPath
 
 
 def getAllFiles(path):
     files = []
-    for file in os.listdir(path):
-        if os.path.isdir(file):
-            files += getAllFiles(os.path.join(path, file))
-        else:
-            if not file in ["__init__.py", "index.py", "indexGen.py", "index.json"]:
-                files.append(os.path.join(path, file))
+    for root, dirs, filenames in os.walk(path):
+        for filename in filenames:
+            print(" " * 190, end="\r")
+            print(filename, end="\r")
+            if filename not in ["__init__.py", "index.py", "indexGen.py", "index.json"]:
+                files.append(
+                    os.path.join(
+                        root, pathSafe(filename.replace('"', "").replace("'", ""))
+                    )
+                )
     return files
 
 
 def generateJsonFile():
-    files = getAllFiles(folderPath)
+    files = getAllFiles(folderPath if auxFolderPath is None else auxFolderPath)
     json = []
     for file in files:
         json.append(file.replace(rootPath, "").replace("\\", "/"))
