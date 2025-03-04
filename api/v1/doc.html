@@ -10,7 +10,7 @@
   <div id="api-docs"></div>
   <script>
     const apiDocs = document.getElementById('api-docs')
-    fetch('https://maybebroken.github.io/api/v1')
+    fetch('/api/v1')
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok')
