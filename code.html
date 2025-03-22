@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MaybeBroken - Code</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            user-select: none;
+        }
+
+        header {
+            user-select: none;
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid white;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        footer {
+            user-select: none;
+            text-align: center;
+            padding: 10px;
+            border-top: 1px solid white;
+            margin-top: 20px;
+        }
+
+        .place-icon-div {
+            text-align: center;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+            border: 1px solid rgb(103, 207, 251);
+            box-shadow: 0 0 10px rgba(191, 191, 191, 0.6);
+            margin: 10px auto;
+        }
+
+        .place-div {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-direction: row;
+            background-color: #323232;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+        }
+
+        .place-info-div {
+            flex: 1;
+            padding: 10px;
+            color: white;
+            background-color: #444;
+            border-radius: 5px;
+            border: 1px solid rgb(103, 207, 251);
+            box-shadow: 0 0 10px rgba(191, 191, 191, 0.6);
+            margin: 10px;
+        }
+
+
+        img {
+            -webkit-user-drag: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Programming work</h1>
+    </header>
+    <main>
+        <div class="place-div">
+            <div class="place-icon-div" id="space-place-header-image">
+                <h4>The Space Place</h4>
+                <img src="https://renacademy.org/dynamic/content/1102/1081/space_place_logo_for_google.png"
+                    alt="The Space Place" width="200" />
+            </div>
+            <div class="place-info-div">
+                <p></p>
+            </div>
+        </div>
+        <div class="place-div">
+            <div class="place-icon-div" id="american-heritage-header-image">
+                <h4>American Heritage</h4>
+                <img src="https://americanheritage.github.io/ahdsc/LCARS-Ultra-23-B/assets/AHDSC.png"
+                    alt="American Heritage" width="100" />
+            </div>
+            <div class="place-info-div">
+                <p></p>
+            </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 MaybeBroken</p>
+    </footer>
+</body>
+
+</html>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    });
+
+    document.getElementById('space-place-header-image').addEventListener('click', function () {
+        window.open('https://www.thespaceplace.org/', '_blank');
+    });
+    document.getElementById('american-heritage-header-image').addEventListener('click', function () {
+        window.open('https://americanheritage.github.io/ahdsc/LCARS-Ultra-23-B/pages/mainPage.html', '_blank');
+    });
+</script>
