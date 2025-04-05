@@ -1,4 +1,5 @@
 [
     "/api/v1/doc.html",
-    "/api/v1/games/arcadeGames/worlds.json"
+    "/api/v1/games/arcadeGames/worlds.json",
+    "/api/v1/software/index.json"
 ]
