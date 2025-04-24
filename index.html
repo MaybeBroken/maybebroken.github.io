@@ -316,12 +316,16 @@
           if (minutes < 60) {
             return `${date.toLocaleDateString()}, ${minutes} minutes ago`
           } else if (hours < 24) {
-            return `${date.toLocaleDateString()}, ${hours} hours ago`
+            if (hours == 1) {
+              return `${date.toLocaleDateString()}, ${hours} hour ago`
+            } else {
+              return `${date.toLocaleDateString()}, ${hours} hours ago`
+            }
           } else {
             if (days == 1) {
               return `${date.toLocaleDateString()}, ${days} day ago`
             } else {
-            return `${date.toLocaleDateString()}, ${days} days ago`
+              return `${date.toLocaleDateString()}, ${days} days ago`
             }
           }
         } catch (error) {
