@@ -1,346 +1,421 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MaybeBroken - Software</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: black;
+        /* Set page background to black */
+        color: white;
+        /* Set text color to white for better contrast */
+      }
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MaybeBroken - Software</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: black;
-      /* Set page background to black */
-      color: white;
-      /* Set text color to white for better contrast */
-    }
+      ul {
+        list-style-type: none;
+      }
 
-    ul {
-      list-style-type: none;
-    }
+      li {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid white;
+        /* Add border to create frame */
+        border-radius: 5px;
+        transition: background-color 0.3s, border-color 0.3s;
+        /* Smooth transition for hover effect */
+      }
 
-    li {
-      margin: 10px 0;
-      padding: 10px;
-      border: 1px solid white;
-      /* Add border to create frame */
-      border-radius: 5px;
-      transition: background-color 0.3s, border-color 0.3s;
-      /* Smooth transition for hover effect */
-    }
+      li:hover {
+        background-color: #333;
+        /* Highlight frame on hover */
+        border-color: #4caf50;
+        /* Change border color on hover */
+      }
 
-    li:hover {
-      background-color: #333;
-      /* Highlight frame on hover */
-      border-color: #4caf50;
-      /* Change border color on hover */
-    }
+      .repo-name {
+        font-weight: bold;
+      }
 
-    .repo-name {
-      font-weight: bold;
-    }
+      .commit-date {
+        color: gray;
+      }
 
-    .commit-date {
-      color: gray;
-    }
+      .commit-graph {
+        display: flex;
+        align-items: flex-end;
+        margin-top: 10px;
+        overflow-x: auto;
+        /* Allow horizontal scrolling for more detailed dates */
+      }
 
-    .commit-graph {
-      display: flex;
-      align-items: flex-end;
-      margin-top: 10px;
-      overflow-x: auto;
-      /* Allow horizontal scrolling for more detailed dates */
-    }
+      .commit-bar {
+        width: 10px;
+        background-color: #4caf50;
+        margin-right: 2px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        /* Rotate text for better readability */
+        text-orientation: mixed;
+        font-size: 10px;
+        color: black;
+        /* Change text color to black */
+      }
 
-    .commit-bar {
-      width: 10px;
-      background-color: #4caf50;
-      margin-right: 2px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      writing-mode: vertical-rl;
-      /* Rotate text for better readability */
-      text-orientation: mixed;
-      font-size: 10px;
-      color: black;
-      /* Change text color to black */
-    }
+      .repo-details {
+        display: none;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 30%;
+        height: 100%;
+        background-color: #222;
+        color: white;
+        padding: 20px;
+        overflow-y: auto;
+        z-index: 20;
+      }
 
-    .repo-details {
-      display: none;
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 30%;
-      height: 100%;
-      background-color: #222;
-      color: white;
-      padding: 20px;
-      overflow-y: auto;
-      z-index: 20;
-    }
+      .repo-details.active {
+        display: block;
+      }
 
-    .repo-details.active {
-      display: block;
-    }
+      .repo-list-item.active {
+        display: none;
+      }
 
-    .repo-list-item.active {
-      display: none;
-    }
+      .hidden {
+        display: none;
+      }
 
-    .hidden {
-      display: none;
-    }
+      .releases-list {
+        margin-left: 20px;
+      }
 
-    .releases-list {
-      margin-left: 20px;
-    }
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        background-color: #333;
+        padding: 10px;
+        color: white;
+        width: 100%;
+        box-sizing: border-box;
+      }
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #333;
-      padding: 10px;
-      color: white;
-      width: 100%;
-      /* Ensure it takes up the whole top */
-      box-sizing: border-box;
-      /* Include padding in the element's total width and height */
-    }
+      .back-button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        position: absolute;
+        left: 10px;
+        /* Align to the far left */
+      }
 
-    .back-button {
-      background-color: #4caf50;
-      border: none;
-      color: white;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      position: absolute;
-      left: 10px;
-      /* Align to the far left */
-    }
+      .releases-button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        position: absolute;
+        right: 10px;
+        /* Align to the far right */
+      }
 
-    .releases-button {
-      background-color: #4caf50;
-      border: none;
-      color: white;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      position: absolute;
-      right: 10px;
-      /* Align to the far right */
-    }
+      .contentBlocker {
+        height: 100vh;
+        width: 100vw;
+        background-color: rgba(0, 0, 0, 0%);
+        z-index: 3;
+        top: 0px;
+        left: 0px;
+        position: absolute;
+        transition: 0.5s;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        opacity: 0%;
+        transition-delay: 0s;
+        pointer-events: none;
+      }
 
-    .repo-browser {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #111;
-      z-index: 10;
-      transition: all 0.5s ease;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
+      .repo-browser {
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: top;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #111;
+        z-index: 10;
+        transition: all 0.5s ease;
+      }
 
-    .repo-link {
-      color: #4caf50;
-      text-decoration: none;
-      font-size: 20px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
+      .repo-link {
+        color: #4caf50;
+        text-decoration: none;
+        font-size: 20px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
 
-<body>
-  <h1 style="text-align: center; margin-top: 20px">Repositories</h1>
-  <ul id="repo-list"></ul>
+  <body>
+    <h1 style="text-align: center; margin-top: 20px">Repositories</h1>
+    <ul id="repo-list"></ul>
 
-  <script>
-    async function fetchRepos() {
-      try {
-        const username = 'MaybeBroken' // Replace with your GitHub username
-        const response = await fetch(
-          `https://api.github.com/users/${username}/repos`
-        )
-        const repos = await response.json()
-        const repoList = document.getElementById('repo-list')
+    <div
+      class="contentBlocker"
+      id="contentBlocker"
+      onclick="blurPage(false)"
+    ></div>
 
-        // Fetch commits for each repo and sort by last commit date
-        const reposWithCommits = await Promise.all(
-          repos.map(async repo => {
-            const commitResponse = await fetch(
-              repo.commits_url.replace('{/sha}', '')
-            )
-            const commits = await commitResponse.json()
-            return { ...repo, commits }
+    <script>
+      async function fetchWithHeaders(url, headers = {}) {
+        try {
+          const token = getGithubToken()
+          const authHeaders = token ? { Authorization: `Bearer ${token}` } : {}
+          const response = await fetch(url, {
+            headers: { ...headers, ...authHeaders }
           })
-        )
-        reposWithCommits.sort((a, b) => {
-          const dateA = new Date(a.commits[0]?.commit.author.date || 0)
-          const dateB = new Date(b.commits[0]?.commit.author.date || 0)
-          return dateB - dateA
-        })
 
-        reposWithCommits.forEach(repo => {
-          const listItem = document.createElement('li')
-          listItem.className = 'repo-list-item'
-          const repoName = document.createElement('span')
-          repoName.className = 'repo-name'
-          repoName.textContent = repo.name
-          listItem.appendChild(repoName)
-
-          if (repo.commits.length > 0) {
-            const commitDate = document.createElement('span')
-            commitDate.className = 'commit-date'
-            commitDate.textContent = ` - Last commit: ${new Date(
-              repo.commits[0].commit.author.date
-            ).toLocaleDateString()}`
-            listItem.appendChild(commitDate)
-
-            // Create commit history graph
-            const commitGraph = document.createElement('div')
-            commitGraph.className = 'commit-graph'
-            const commitCounts = repo.commits.reduce((acc, commit) => {
-              const date = new Date(
-                commit.commit.author.date
-              ).toLocaleDateString()
-              acc[date] = (acc[date] || 0) + 1
-              return acc
-            }, {})
-            const allDates = []
-            const startDate = new Date(
-              repo.commits[repo.commits.length - 1].commit.author.date
-            )
-            const endDate = new Date(repo.commits[0].commit.author.date)
-            for (
-              let d = startDate;
-              d <= endDate;
-              d.setDate(d.getDate() + 1)
-            ) {
-              allDates.push(new Date(d).toLocaleDateString())
-            }
-            allDates.forEach(date => {
-              if (commitCounts[date]) {
-                // Only create bars for dates with commits
-                const bar = document.createElement('div')
-                bar.className = 'commit-bar'
-                bar.style.height = `${commitCounts[date] * 10}px`
-                bar.title = `${date}: ${commitCounts[date]} commits`
-                bar.textContent = commitCounts[date] // Show the number of commits
-                commitGraph.appendChild(bar)
+          if (response.status === 403 || response.status === 429) {
+            if (!token) {
+              const newToken = prompt(
+                'GitHub API rate limit exceeded. Please enter your GitHub token:'
+              )
+              if (newToken) {
+                setGithubToken(newToken)
+                return fetchWithHeaders(url, headers)
               }
-            })
-            listItem.appendChild(commitGraph)
+            } else {
+              alert(
+                'GitHub API rate limit exceeded even with a token. Please try again later.'
+              )
+            }
+            return null
           }
 
-          listItem.addEventListener('click', () => {
-            document.querySelectorAll('.repo-list-item').forEach(item => {
-              item.classList.add('hidden')
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+
+          return await response.json()
+        } catch (error) {
+          console.error('Error during fetch:', error)
+          return null
+        }
+      }
+
+      async function fetchRepos() {
+        try {
+          const username = 'MaybeBroken' // Replace with your GitHub username
+          const repos = await fetchWithHeaders(
+            `https://api.github.com/users/${username}/repos`
+          )
+          if (!repos) return
+
+          const repoList = document.getElementById('repo-list')
+
+          // Fetch commits for each repo and sort by last commit date
+          const reposWithCommits = await Promise.all(
+            repos.map(async repo => {
+              const commits = await fetchAllCommits(
+                repo.commits_url.replace('{/sha}', '')
+              )
+              return { ...repo, commits }
             })
-            listItem.classList.remove('hidden')
-            listItem.classList.add('active')
-            showRepoDetails(repo)
+          )
+
+          reposWithCommits.sort((a, b) => {
+            const dateA = new Date(a.commits[0]?.commit.author.date || 0)
+            const dateB = new Date(b.commits[0]?.commit.author.date || 0)
+            return dateB - dateA
           })
 
-          repoList.appendChild(listItem)
-        })
-      } catch (error) {
-        console.error('Error fetching repositories:', error)
-      }
-    }
+          reposWithCommits.forEach(repo => {
+            const listItem = document.createElement('li')
+            listItem.className = 'repo-list-item'
+            const repoName = document.createElement('span')
+            repoName.className = 'repo-name'
+            repoName.textContent = repo.name
+            listItem.appendChild(repoName)
 
-    async function showRepoDetails(repo) {
-      const repoBrowser = document.createElement('div')
-      repoBrowser.className = 'repo-browser'
-      repoBrowser.innerHTML = `
-          <div class="top-bar">
-            <h2 style="text-align: center; flex-grow: 1; margin: 0;">${repo.name}</h2>
-            <button class="releases-button" onclick="showReleases()">Releases</button>
-            <button class="back-button" onclick="goBack()">Back</button>
-          </div>
-          <iframe src=""></iframe>
-        `
+            if (repo.commits.length > 0) {
+              const commitDate = document.createElement('span')
+              commitDate.className = 'commit-date'
+              commitDate.textContent = ` - Last commit: ${new Date(
+                repo.commits[0].commit.author.date
+              ).toLocaleDateString()}`
+              listItem.appendChild(commitDate)
 
-      const repoDetails = document.createElement('div')
-      repoDetails.className = 'repo-details'
-      const releasesResponse = await fetch(
-        repo.releases_url.replace('{/id}', ''),
-        {
-          headers: {
-            Authorization: `token ${READ_TOKEN}`
-          }
+              const commitCount = document.createElement('span')
+              commitCount.className = 'commit-count'
+              commitCount.textContent = ` (${repo.commits.length} commits)`
+              listItem.appendChild(commitCount)
+
+              // Create commit history graph
+              const commitGraph = document.createElement('div')
+              commitGraph.className = 'commit-graph'
+              const commitCounts = repo.commits.reduce((acc, commit) => {
+                const date = new Date(
+                  commit.commit.author.date
+                ).toLocaleDateString()
+                acc[date] = (acc[date] || 0) + 1
+                return acc
+              }, {})
+              const allDates = []
+              const startDate = new Date(
+                repo.commits[repo.commits.length - 1].commit.author.date
+              )
+              const endDate = new Date(repo.commits[0].commit.author.date)
+              for (
+                let d = startDate;
+                d <= endDate;
+                d.setDate(d.getDate() + 1)
+              ) {
+                allDates.push(new Date(d).toLocaleDateString())
+              }
+              allDates.forEach(date => {
+                if (commitCounts[date]) {
+                  // Only create bars for dates with commits
+                  const bar = document.createElement('div')
+                  bar.className = 'commit-bar'
+                  bar.style.height = `${commitCounts[date] * 10}px`
+                  bar.title = `${date}: ${commitCounts[date]} commits`
+                  bar.textContent = commitCounts[date] // Show the number of commits
+                  commitGraph.appendChild(bar)
+                }
+              })
+              listItem.appendChild(commitGraph)
+            }
+
+            listItem.addEventListener('click', () => {
+              window.location.href = `?repo=${encodeURIComponent(repo.name)}`
+            })
+
+            repoList.appendChild(listItem)
+          })
+        } catch (error) {
+          console.error('Error fetching repositories:', error)
         }
-      )
-      const releases = await releasesResponse.json()
-      if (releases.length > 0) {
-        const releasesList = document.createElement('ul')
-        releasesList.className = 'releases-list'
-        releases.forEach(release => {
-          const releaseItem = document.createElement('li')
-          const releaseLink = document.createElement('a')
-          releaseLink.href = release.zipball_url
-          releaseLink.textContent = release.name
-          releaseLink.download = ''
-          releaseItem.appendChild(releaseLink)
-          releasesList.appendChild(releaseItem)
-        })
-        repoDetails.appendChild(releasesList)
-      } else {
-        repoDetails.innerHTML += '<p>No releases available.</p>'
       }
 
-      document.body.appendChild(repoBrowser)
-      document.body.appendChild(repoDetails)
-    }
+      async function fetchAllCommits(commitsUrl) {
+        let commits = []
+        let page = 1
+        while (true) {
+          const pageCommits = await fetchWithHeaders(
+            `${commitsUrl}?per_page=100&page=${page}`
+          )
+          if (!pageCommits || pageCommits.length === 0) break
+          commits = commits.concat(pageCommits)
+          page++
+        }
+        return commits
+      }
 
-    function showReleases() {
-      const repoDetails = document.querySelector('.repo-details')
-      if (repoDetails) {
-        repoDetails.classList.add('active')
-        const topBar = document.createElement('div')
-        topBar.className = 'top-bar'
-        topBar.innerHTML = `
-            <h2>Releases</h2>
-            <button class="back-button" onclick="hideReleases()">Back</button>
+      function getGithubToken() {
+        return localStorage.getItem('github_token') || null // Retrieve token from localStorage
+      }
+
+      function setGithubToken(token) {
+        localStorage.setItem('github_token', token) // Store token in localStorage
+      }
+
+      async function showRepoDetails() {
+        const repoDetails = document.querySelector('.repo-details')
+        if (repoDetails) {
+          repoDetails.classList.toggle('active')
+          blurPage(true)
+        }
+      }
+
+      async function hideRepoDetails() {
+        const repoDetails = document.querySelector('.repo-details')
+        if (repoDetails) {
+          repoDetails.classList.remove('active')
+        }
+      }
+
+      async function blurPage(doBlur) {
+        const contentBlocker = document.getElementById('contentBlocker')
+        if (doBlur) {
+          contentBlocker.classList.add('active')
+        } else {
+          contentBlocker.classList.remove('active')
+          hideRepoDetails()
+        }
+      }
+
+      async function fetchRepoDetails(repoName) {
+        try {
+          const username = 'MaybeBroken' // Replace with your GitHub username
+          const repo = await fetchWithHeaders(
+            `https://api.github.com/repos/${username}/${repoName}`
+          )
+          const releases = await fetchWithHeaders(
+            repo.releases_url.replace('{/id}', '')
+          )
+
+          const repoBrowser = document.createElement('div')
+          repoBrowser.className = 'repo-browser'
+          repoBrowser.innerHTML = `
+            <div class="top-bar">
+              <button class="releases-button" onclick="showRepoDetails()">Releases</button>
+              <h2 style="text-align: center; flex-grow: 1; margin: 0;">${
+                repo.name
+              }</h2>
+              <button class="back-button" onclick="goBack()">Back</button>
+            </div>
+            <div class="repo-details">
+              <p>${repo.description || 'No description available.'}</p>
+              <h3>Releases:</h3>
+              <ul class="releases-list">
+                ${releases
+                  .map(
+                    release => `
+                  <li>
+                    <a href="${release.zipball_url}" download>${release.name}</a>
+                  </li>
+                `
+                  )
+                  .join('')}
+              </ul>
+            </div>
           `
-        repoDetails.insertBefore(topBar, repoDetails.firstChild)
-      }
-    }
 
-    function hideReleases() {
-      const repoDetails = document.querySelector('.repo-details')
-      if (repoDetails) {
-        repoDetails.classList.remove('active')
-        const topBar = repoDetails.querySelector('.top-bar')
-        if (topBar) {
-          topBar.remove()
+          document.body.innerHTML = ''
+          document.body.appendChild(repoBrowser)
+        } catch (error) {
+          console.error('Error fetching repository details:', error)
         }
       }
-    }
 
-    function goBack() {
-      document.querySelectorAll('.repo-list-item').forEach(item => {
-        item.classList.remove('hidden')
-        item.classList.remove('active')
+      function goBack() {
+        window.location.href = window.location.pathname
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const repoName = urlParams.get('repo')
+
+        if (repoName) {
+          fetchRepoDetails(repoName)
+        } else {
+          fetchRepos()
+        }
       })
-      const repoBrowser = document.querySelector('.repo-browser')
-      if (repoBrowser) {
-        repoBrowser.remove()
-      }
-      const repoDetails = document.querySelector('.repo-details')
-      if (repoDetails) {
-        repoDetails.remove()
-      }
-    }
-
-    fetchRepos()
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>
