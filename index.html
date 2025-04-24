@@ -23,6 +23,18 @@
         transition: background-color 0.3s, border-color 0.3s;
       }
 
+      a {
+        color: #4caf50;
+        text-decoration: none;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 16px;
+        transition: all 0.3s ease;
+      }
+      a:hover {
+        text-decoration: underline;
+        transform: scale(1.05);
+      }
+
       li:hover {
         background-color: #333;
         border-color: #4caf50;
@@ -136,7 +148,7 @@
 
       .repo-browser {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         flex-direction: column;
         justify-content: top;
         background-color: #111;
@@ -235,9 +247,12 @@
             if (repo.commits.length > 0) {
               const commitDate = document.createElement('span')
               commitDate.className = 'commit-date'
-              commitDate.textContent = ` - Last commit: ${new Date(
+              const lastCommitDate = new Date(
                 repo.commits[0].commit.author.date
-              ).toLocaleDateString()}`
+              )
+              commitDate.textContent = ` - Last commit: ${formatDate(
+                lastCommitDate
+              )}`
               listItem.appendChild(commitDate)
 
               const commitCount = document.createElement('span')
@@ -287,6 +302,30 @@
           })
         } catch (error) {
           console.error('Error fetching repositories:', error)
+        }
+      }
+
+      function formatDate(date) {
+        try {
+          const now = new Date()
+          const diff = now - date
+          const minutes = Math.floor(diff / (1000 * 60))
+          const hours = Math.floor(diff / (1000 * 60 * 60))
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+          if (minutes < 60) {
+            return `${date.toLocaleDateString()}, ${minutes} minutes ago`
+          } else if (hours < 24) {
+            return `${date.toLocaleDateString()}, ${hours} hours ago`
+          } else {
+            if (days == 1) {
+              return `${date.toLocaleDateString()}, ${days} day ago`
+            } else {
+            return `${date.toLocaleDateString()}, ${days} days ago`
+            }
+          }
+        } catch (error) {
+          return 'Unknown date'
         }
       }
 
@@ -352,15 +391,45 @@
           repoBrowser.innerHTML = `
             <div class="top-bar">
               <button class="releases-button" onclick="showRepoDetails()">Releases</button>
-              <h2 style="text-align: center; flex-grow: 1; margin: 0;">${repo.name}</h2>
+              <h2 style="text-align: center; flex-grow: 1; margin: 0;">${
+                repo.name
+              }</h2>
               <button class="back-button" onclick="goBack()">Back</button>
             </div>
+            <h3>Download Repository</h3>
+            <a href="https://github.com/MaybeBroken/${
+              repo.name
+            }/archive/refs/heads/main.zip" download>${repo.name}.zip</a>
+            <h3>Commits:</h3>
+            <ul>
+              ${(await fetchAllCommits(repo.commits_url.replace('{/sha}', '')))
+                .map(
+                  commit => `
+                <li>
+                  <strong>${commit.commit.message}</strong>
+                  <span class="commit-date"> - ${formatDate(
+                    new Date(commit.commit.author.date)
+                  )}</span>
+                </li>
+              `
+                )
+                .join('')}
+            </ul>
           `
 
           const repoDetails = document.createElement('div')
           repoDetails.className = 'repo-details'
           repoDetails.innerHTML = `
             <p>${repo.description || 'No description available.'}</p>
+            <li><strong>Language:</strong> ${repo.language || 'Unknown'}</li>
+            <li><strong>Stars:</strong> ${repo.stargazers_count || 0}</li>
+            <li><strong>Forks:</strong> ${repo.forks_count || 0}</li>
+            <li><strong>Last Updated:</strong> ${formatDate(
+              new Date(repo.updated_at)
+            )}</li>
+            <li><strong>URL:</strong> <a href="${
+              repo.html_url
+            }" target="_blank">${repo.html_url}</a></li>
             <h3>Releases:</h3>
             <ul class="releases-list">
               ${releases
