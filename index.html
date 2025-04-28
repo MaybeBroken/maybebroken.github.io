@@ -36,7 +36,7 @@
       }
 
       li:hover {
-        background-color: #333;
+        background-color: #85858522;
         border-color: #4caf50;
       }
 
@@ -447,7 +447,6 @@
 
       async function fetchTree(url, id) {
         root = document.getElementById(id)
-        console.log(root)
         await fetchWithHeaders(url)
           .then(objects => {
             content = ''
