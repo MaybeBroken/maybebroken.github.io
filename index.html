@@ -18,7 +18,7 @@
       li {
         margin: 10px 0;
         padding: 10px;
-        border: 1px solid white;
+        border-left: 1px solid white;
         border-radius: 5px;
         transition: background-color 0.3s, border-color 0.3s;
       }
@@ -160,6 +160,21 @@
         text-decoration: none;
         font-size: 20px;
         margin-top: 20px;
+      }
+
+      .repo-browser ul {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+
+      .repo-browser li {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px;
+        border-left: 1px solid white;
+        border-radius: 5px;
+        transition: background-color 0.3s, border-color 0.3s;
       }
     </style>
   </head>
@@ -384,6 +399,73 @@
         }
       }
 
+      async function downloadFromTree(url, path, rootId) {
+        const root = document.getElementById(rootId)
+        root.innerHTML = 'Downloading...'
+        root.style.borderBottom = '3px solid #4caf50'
+        root.style.animation = 'download-animation 1s infinite'
+        try {
+          const response = await fetchWithHeaders(url)
+          if (!response?.content) {
+            throw new Error('Failed to fetch file content')
+          }
+
+          const content =
+            response.encoding === 'base64'
+              ? Uint8Array.from(atob(response.content), c => c.charCodeAt(0))
+              : new TextEncoder().encode(response.content)
+
+          const blob = new Blob([content], {
+            type: response.type || 'application/octet-stream'
+          })
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(blob)
+          link.download = path
+
+          document.body.append(link)
+          link.click()
+          link.remove()
+          root.innerHTML = `<strong>${path}</strong>`
+        } catch (error) {
+          console.error('Error downloading file:', error)
+        } finally {
+          root.style.borderBottom = ''
+          root.style.animation = ''
+        }
+      }
+
+      // Add CSS for animation
+      const style = document.createElement('style')
+      style.textContent = `
+        @keyframes download-animation {
+          0% { border-bottom-color: #4caf50; }
+          50% { border-bottom-color: #333; }
+          100% { border-bottom-color: #4caf50; }
+        }
+      `
+      document.head.appendChild(style)
+
+      async function fetchTree(url, id) {
+        root = document.getElementById(id)
+        console.log(root)
+        await fetchWithHeaders(url)
+          .then(objects => {
+            content = ''
+            for (const obj of objects.tree) {
+              if (obj.type === 'blob') {
+                content += `<li onClick="event.stopPropagation(); downloadFromTree('${obj.url}', '${obj.path}', 'obj-${obj.url}-child-${obj.path}')" id="obj-${obj.url}-child-${obj.path}"><strong>${obj.path}</strong></li>`
+              } else if (obj.type === 'tree') {
+                content += `<li onClick="event.stopPropagation(); fetchTree('${obj.url}', 'tree-${obj.url}-child-${obj.path}')"><span>${obj.path}</span><div class="tree-children" id="tree-${obj.url}-child-${obj.path}"></div></li>`
+              }
+            }
+            root.innerHTML = content
+          })
+          .catch(error => {
+            console.error('Error fetching tree:', error)
+            root.innerHTML = 'Error fetching tree'
+          })
+      }
+
       async function fetchRepoDetails(repoName) {
         try {
           const username = 'MaybeBroken'
@@ -393,6 +475,10 @@
           const releases = await fetchWithHeaders(
             repo.releases_url.replace('{/id}', '')
           )
+          var commits = await fetchAllCommits(
+            repo.commits_url.replace('{/sha}', '')
+          )
+          var currentCommit = commits[0]
 
           const repoBrowser = document.createElement('div')
           repoBrowser.className = 'repo-browser'
@@ -408,9 +494,11 @@
             <a href="https://github.com/MaybeBroken/${
               repo.name
             }/archive/refs/heads/main.zip" download>${repo.name}.zip</a>
+            <h3>Browser:</h3>
+            <ul id="repo-tree-browser"></ul>
             <h3>Commits:</h3>
             <ul>
-              ${(await fetchAllCommits(repo.commits_url.replace('{/sha}', '')))
+              ${commits
                 .map(
                   commit => `
                 <li>
@@ -455,6 +543,7 @@
           document.body.innerHTML = ''
           document.body.appendChild(repoBrowser)
           document.body.appendChild(repoDetails)
+          await fetchTree(currentCommit.commit.tree.url, 'repo-tree-browser')
         } catch (error) {
           console.error('Error fetching repository details:', error)
         }
