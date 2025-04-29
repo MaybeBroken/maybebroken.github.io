@@ -15,12 +15,35 @@
         list-style-type: none;
       }
 
+      h1 {
+        color: white;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 30px;
+      }
+
       li {
         margin: 10px 0;
         padding: 10px;
         border-left: 1px solid white;
+        border-bottom: 2px double #000000;
         border-radius: 5px;
-        transition: background-color 0.3s, border-color 0.3s;
+        position: relative;
+        transition: background-color 0.3s, border-color 0.3s, transform 0.3s;
+      }
+
+      li::after {
+        content: '';
+        position: absolute;
+        bottom: -7px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: rgb(130, 130, 130);
+      }
+      li:hover {
+        background-color: #85858522;
+        border-color: #4caf50;
+        transform: translateX(5px);
       }
 
       a {
@@ -35,13 +58,10 @@
         transform: scale(1.05);
       }
 
-      li:hover {
-        background-color: #85858522;
-        border-color: #4caf50;
-      }
-
       .repo-name {
-        font-weight: bold;
+        font-weight: lighter;
+        font-size: 20px;
+        font-family: 'Courier New', Courier, monospace;
       }
 
       .commit-date {
@@ -64,8 +84,9 @@
         justify-content: center;
         writing-mode: vertical-rl;
         text-orientation: mixed;
-        font-size: 10px;
+        font-size: 9px;
         color: black;
+        border-radius: 4px;
       }
 
       .repo-details {
@@ -74,11 +95,15 @@
         top: 0;
         right: 0;
         width: 30%;
-        height: 100%;
+        height: 80%;
         background-color: #222;
         color: white;
         padding: 20px;
         overflow-y: auto;
+        margin: 25px;
+        border-radius: 15px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        border: 3px double #ffffff;
       }
 
       .repo-details.active {
@@ -100,12 +125,13 @@
       .top-bar {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         background-color: #333;
         padding: 10px;
         color: white;
         width: 100%;
         box-sizing: border-box;
+        border-radius: 10px;
       }
 
       .back-button {
@@ -117,6 +143,7 @@
         border-radius: 5px;
         position: absolute;
         left: 10px;
+        margin: 6px;
       }
 
       .releases-button {
@@ -128,6 +155,7 @@
         border-radius: 5px;
         position: absolute;
         right: 10px;
+        margin: 6px;
       }
 
       .contentBlocker {
@@ -163,18 +191,32 @@
       }
 
       .repo-browser ul {
-        width: 100%;
-        padding: 0;
-        margin: 0;
+        background-color: #222;
+        width: 80%;
+        padding: 15px;
+        margin: 8px;
+        border-radius: 15px;
       }
 
-      .repo-browser li {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px;
-        border-left: 1px solid white;
-        border-radius: 5px;
-        transition: background-color 0.3s, border-color 0.3s;
+      .folder {
+        cursor: pointer;
+        background-color: #b19300;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+      .folder:hover {
+        background-color: #7f6a00;
+        transform: scale(1.01);
+      }
+
+      .file {
+        cursor: pointer;
+        background-color: #625d3e;
+        transition: all 0.3s;
+      }
+      .file:hover {
+        background-color: #4f4b2e;
+        transform: scale(0.995);
       }
     </style>
   </head>
@@ -452,9 +494,9 @@
             content = ''
             for (const obj of objects.tree) {
               if (obj.type === 'blob') {
-                content += `<li onClick="event.stopPropagation(); downloadFromTree('${obj.url}', '${obj.path}', 'obj-${obj.url}-child-${obj.path}')" id="obj-${obj.url}-child-${obj.path}"><strong>${obj.path}</strong></li>`
+                content += `<li onClick="event.stopPropagation(); downloadFromTree('${obj.url}', '${obj.path}', 'obj-${obj.url}-child-${obj.path}')" id="obj-${obj.url}-child-${obj.path}" class="file"><strong>${obj.path}</strong></li>`
               } else if (obj.type === 'tree') {
-                content += `<li onClick="event.stopPropagation(); fetchTree('${obj.url}', 'tree-${obj.url}-child-${obj.path}')"><span>${obj.path}</span><div class="tree-children" id="tree-${obj.url}-child-${obj.path}"></div></li>`
+                content += `<li onClick="event.stopPropagation(); fetchTree('${obj.url}', 'tree-${obj.url}-child-${obj.path}')" class="folder"><span>${obj.path}</span><div class="tree-children" id="tree-${obj.url}-child-${obj.path}"></div></li>`
               }
             }
             root.innerHTML = content
