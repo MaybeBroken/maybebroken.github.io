@@ -332,23 +332,31 @@
               )
               const endDate = new Date(repo.commits[0].commit.author.date)
               for (
-                let d = startDate;
+                let d = new Date(startDate);
                 d <= endDate;
                 d.setDate(d.getDate() + 1)
               ) {
                 allDates.push(new Date(d).toLocaleDateString())
               }
               allDates.forEach(date => {
+                const bar = document.createElement('div')
+                bar.className = 'commit-bar'
                 if (commitCounts[date]) {
-                  const bar = document.createElement('div')
-                  bar.className = 'commit-bar'
                   bar.style.height = `${commitCounts[date] * 10}px`
                   bar.title = `${date}: ${commitCounts[date]} commits`
                   bar.textContent = commitCounts[date]
-                  commitGraph.appendChild(bar)
+                } else {
+                  bar.style.height = '2px'
+                  bar.title = `${date}: 0 commits`
                 }
+                commitGraph.appendChild(bar)
               })
               listItem.appendChild(commitGraph)
+
+              // Scroll the commit graph to the end
+              setTimeout(() => {
+                commitGraph.scrollLeft = commitGraph.scrollWidth
+              }, 0)
             }
 
             listItem.addEventListener('click', () => {
@@ -369,6 +377,8 @@
           const minutes = Math.floor(diff / (1000 * 60))
           const hours = Math.floor(diff / (1000 * 60 * 60))
           const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+          const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30))
+          const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365))
 
           if (minutes < 60) {
             if (minutes == 1) {
@@ -382,11 +392,23 @@
             } else {
               return `${date.toLocaleDateString()}, ${hours} hours ago`
             }
-          } else {
+          } else if (days < 30) {
             if (days == 1) {
               return `${date.toLocaleDateString()}, ${days} day ago`
             } else {
               return `${date.toLocaleDateString()}, ${days} days ago`
+            }
+          } else if (months < 12) {
+            if (months == 1) {
+              return `${date.toLocaleDateString()}, ${months} month ago`
+            } else {
+              return `${date.toLocaleDateString()}, ${months} months ago`
+            }
+          } else {
+            if (years == 1) {
+              return `${date.toLocaleDateString()}, ${years} year ago`
+            } else {
+              return `${date.toLocaleDateString()}, ${years} years ago`
             }
           }
         } catch (error) {
