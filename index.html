@@ -9,6 +9,7 @@
         font-family: Arial, sans-serif;
         background-color: black;
         color: white;
+        overflow-x: hidden; /* Prevent horizontal scrolling */
       }
 
       ul {
@@ -320,9 +321,9 @@
               const commitGraph = document.createElement('div')
               commitGraph.className = 'commit-graph'
               const commitCounts = repo.commits.reduce((acc, commit) => {
-                const date = new Date(
-                  commit.commit.author.date
-                ).toLocaleDateString()
+                const date = new Date(commit.commit.author.date)
+                  .toISOString()
+                  .split('T')[0] // Use ISO date format (YYYY-MM-DD)
                 acc[date] = (acc[date] || 0) + 1
                 return acc
               }, {})
@@ -336,7 +337,7 @@
                 d <= endDate;
                 d.setDate(d.getDate() + 1)
               ) {
-                allDates.push(new Date(d).toLocaleDateString())
+                allDates.push(d.toISOString().split('T')[0]) // Use ISO date format
               }
               allDates.forEach(date => {
                 const bar = document.createElement('div')
