@@ -1,8 +1,8 @@
 [
     {
-        "name": "Example",
-        "currentVersion": "1.0.0",
-        "currentPackageUrl": "https://github.com/MaybeBroken/ExampleAutoUpdaterRepo/releases/download/example/example.zip",
-        "currentReleaseDate": "2023-01-01"
+        "name": "OP Media Player",
+        "currentVersion": "0.0.1",
+        "currentPackageUrl": "https://github.com/MaybeBroken/OP-Media-Player/releases/download/v0.0.1/0.0.1.zip",
+        "currentReleaseDate": "2025-05-09"
     }
 ]
