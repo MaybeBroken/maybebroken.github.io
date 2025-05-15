@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Shader Demo Page</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="glcanvas"></canvas>
+    <script type="x-shader/x-vertex" id="vertex-shader">
+attribute vec2 a_position;
+varying vec2 v_uv;
+void main() {
+    v_uv = a_position * 0.5 + 0.5;
+    gl_Position = vec4(a_position, 0, 1);
+}
+</script>
+    <script type="x-shader/x-fragment" id="fragment-shader">
+precision highp float;
+varying vec2 v_uv;
+uniform float u_time;
+uniform vec2 u_mouse;
+uniform vec2 u_resolution;
+
+// Lens flare helper: soft octagon with offset for chromatic aberration and edge warping
+float flareOctagon(vec2 uv, vec2 center, float radius, float softness, vec2 aberration, float warp, float t) {
+    vec2 p = (uv - center) + aberration;
+    float angle = atan(p.y, p.x);
+    // Slightly warp the octagon edge for realism
+    float edgeWarp = 1.0 + warp * (sin(angle * 8.0 + t * 1.2) * 0.08 + cos(angle * 4.0 - t * 0.7) * 0.04);
+    float a = abs(p.x);
+    float b = abs(p.y);
+    float c = abs(p.x + p.y) * 0.70710678;
+    float d = abs(p.x - p.y) * 0.70710678;
+    float octDist = max(max(a, b), max(c, d)) * edgeWarp;
+    return exp(-pow(octDist / radius, softness));
+}
+
+// Starburst streaks (angular modulation)
+float starburst(vec2 uv, vec2 center, float intensity, float t) {
+    vec2 p = uv - center;
+    float r = length(p);
+    float a = atan(p.y, p.x);
+
+    // Use fewer, wider, and softer streaks for a smoother look
+    float streaks = pow(abs(sin(a * 5.0 + t * 0.5)), 8.0) + pow(abs(sin(a * 2.5 - t * 0.8)), 6.0);
+
+    // Add a soft falloff for the streaks
+    float soft = exp(-r * 8.0);
+
+    // Blend the streaks with a soft round core for smoothness
+    float core = exp(-pow(r / 0.07, 2.0)) * 0.7;
+
+    return intensity * (streaks * soft + core);
+}
+
+ // Rainbow ring for chromatic dispersion with starburst streaks and mini-flares
+vec3 rainbowRing(vec2 uv, vec2 center, float radius, float width, float t) {
+    float d = length(uv - center);
+    float ring = smoothstep(radius + width, radius, d) * smoothstep(radius - width, radius, d);
+
+    float angle = atan(uv.y - center.y, uv.x - center.x);
+    float hue = mod(angle / 6.2831 + t * 0.2, 1.0);
+    vec3 color = vec3(hue, 0.5, 1.0);
+    color = mix(vec3(0.0, 0.05, 0.2), color, smoothstep(0.0, 1.0, d - radius));
+
+    // Starburst streaks around the ring
+    float streaks = pow(abs(sin(angle * 8.0 + t * 0.7)), 8.0) + pow(abs(sin(angle * 4.0 - t * 0.5)), 6.0);
+    streaks *= 0.7 + 0.3 * sin(t + angle * 2.0);
+
+    // Mini-flares: small bright spots at regular intervals
+    float miniFlares = 0.0;
+    for (int i = 0; i < 6; i++) {
+        float flareAngle = 6.2831 * float(i) / 6.0 + 0.2 * sin(t + float(i));
+        float flareDist = abs(angle - flareAngle);
+        flareDist = min(flareDist, 6.2831 - flareDist); // wrap around
+        miniFlares += exp(-pow(flareDist * 18.0, 2.0)) * 1.2;
+    }
+
+    float effect = ring * (0.5 + 0.7 * streaks + miniFlares);
+
+    return color * effect;
+}
+
+void main() {
+    vec2 uv = v_uv * u_resolution / min(u_resolution.x, u_resolution.y);
+    float t = u_time * 0.8;
+    float n = 0.05;
+    float scale = 1.0;
+    float d = distance(uv, u_mouse * u_resolution / min(u_resolution.x, u_resolution.y));
+    float color = n + 0.2 * exp(-d * 2.0);
+
+    // --- Lens flare effect ---
+    vec2 center = 0.5 * u_resolution / min(u_resolution.x, u_resolution.y);
+    vec2 mouse = (u_mouse-0.35) * u_resolution / min(u_resolution.x, u_resolution.y) * 4.0 - 0.2;
+    vec2 dir = mouse - center;
+    float dist = length(dir);
+
+    // Avoid division by zero and normalize safely
+    vec2 safeDir = dist > 0.0001 ? normalize(dir) : vec2(1.0, 0.0);
+
+    // Chromatic aberration and color shift based on distance from center
+    float aberrAmount = mix(0.01, 0.09, smoothstep(0.0, 0.7, dist));
+    vec2 aberrR = safeDir * aberrAmount;
+    vec2 aberrG = safeDir * (aberrAmount * 0.7);
+    vec2 aberrB = safeDir * (-aberrAmount * 0.5);
+
+    // Color shift: more blue near center, more yellow/red farther out
+    vec3 flareBaseColor = mix(vec3(0.2, 0.5, 1.0), vec3(1.0, 0.85, 0.3), smoothstep(0.0, 0.7, dist));
+
+    // Flare parameters: positions and colors, softer and larger
+    float flareR = 0.0;
+    float flareG = 0.0;
+    float flareB = 0.0;
+
+    // Main flare at mouse (core + halo)
+    float core = flareOctagon(uv, mouse, 0.08, 7.0, aberrR, 0.22, t) * 1.4;
+    float halo = flareOctagon(uv, mouse, 0.19, 2.7, aberrR, 0.12, t) * 0.8;
+    flareR += core + halo;
+    core = flareOctagon(uv, mouse, 0.075, 7.0, aberrG, 0.22, t) * 1.4;
+    halo = flareOctagon(uv, mouse, 0.18, 2.7, aberrG, 0.12, t) * 0.8;
+    flareG += core + halo;
+    core = flareOctagon(uv, mouse, 0.07, 7.0, aberrB, 0.22, t) * 1.4;
+    halo = flareOctagon(uv, mouse, 0.17, 2.7, aberrB, 0.12, t) * 0.8;
+    flareB += core + halo;
+
+    // Starburst streaks
+    flareR += starburst(uv, mouse, 0.28, t);
+    flareG += starburst(uv, mouse, 0.23, t);
+    flareB += starburst(uv, mouse, 0.19, t);
+
+    // Rainbow ring around the main flare
+    vec3 ring = rainbowRing(uv, mouse, 0.21, 0.018, t);
+    flareR += ring.r;
+    flareG += ring.g;
+    flareB += ring.b;
+
+    // Secondary flares along the line (ghosts)
+    float ghostAlpha[2];
+    ghostAlpha[0] = 0.5;
+    ghostAlpha[1] = 0.3;
+    for (int i = 0; i < 2; i++) {
+        float ghostT = float(i + 1) * 0.5;
+        vec2 ghostPos = center + safeDir * dist * ghostT;
+        flareR += flareOctagon(uv, ghostPos, 0.09 - 0.02 * float(i), 4.0, aberrR, 0.13, t) * ghostAlpha[i];
+        flareG += flareOctagon(uv, ghostPos, 0.08 - 0.02 * float(i), 4.0, aberrG, 0.13, t) * ghostAlpha[i];
+        flareB += flareOctagon(uv, ghostPos, 0.07 - 0.02 * float(i), 4.0, aberrB, 0.13, t) * ghostAlpha[i];
+    }
+
+    // Negative ghost (reflection) on the opposite side
+    vec2 negGhost = center - safeDir * dist * 0.35;
+    flareR += flareOctagon(uv, negGhost, 0.06, 4.0, aberrR, 0.10, t) * 0.18;
+    flareG += flareOctagon(uv, negGhost, 0.05, 4.0, aberrG, 0.10, t) * 0.18;
+    flareB += flareOctagon(uv, negGhost, 0.04, 4.0, aberrB, 0.10, t) * 0.18;
+
+    // Subtle colored halo around the center
+    flareR += flareOctagon(uv, center, 0.22, 2.5, vec2(0.0), 0.07, t) * 0.08;
+    flareG += flareOctagon(uv, center, 0.22, 2.5, vec2(0.0), 0.07, t) * 0.12;
+    flareB += flareOctagon(uv, center, 0.22, 2.5, vec2(0.0), 0.07, t) * 0.18;
+
+    // Subtle blue ghost farther out
+    vec2 farGhost = center + safeDir * dist * 1.2;
+    flareB += flareOctagon(uv, farGhost, 0.04, 3.0, vec2(0.0), 0.09, t) * 0.12;
+
+    // Flare color (chromatic aberration, bluish-white, distance-based)
+    vec3 flareColor = vec3(flareR, flareG, flareB) * 1.25 * flareBaseColor;
+
+    // --- Starburst follows mouse, blooms, and fades out when far from center ---
+    float starburstFade = 1.0 - smoothstep(0.18, 0.45, dist); // 1 at center, 0 when far
+    float starburstVal = starburst(uv, mouse, 2.0, t) * starburstFade;
+
+    // Heavy bloom: add a soft, wide glow around the starburst
+    float starBloom = exp(-pow(length(uv - mouse) / 0.13, 2.0)) * 2.2 * starburstFade;
+    vec3 starburstColor = mix(vec3(1.0, 0.97, 0.90), flareBaseColor, dist) * (starburstVal + starBloom);
+
+    // Compose final color: always show both flare and starburst+bloom
+    vec3 finalFlare = flareColor + starburstColor;
+
+    // --- Add a LOT of bloom to the final output, controlled by variables ---
+    float bloomRadius1 = 0.18;
+    float bloomRadius2 = 0.32;
+    float bloomRadius3 = 1.3;
+    float bloomStrength1 = 0.9;
+    float bloomStrength2 = 0.7;
+    float bloomStrength3 = 0.5;
+
+    // Large, soft radial bloom centered on the mouse
+    float bloom1 = exp(-pow(length(uv - mouse) / bloomRadius1, 2.0)) * bloomStrength1;
+    float bloom2 = exp(-pow(length(uv - mouse) / bloomRadius2, 2.0)) * bloomStrength2;
+    float bloom3 = exp(-pow(length(uv - mouse) / bloomRadius3, 2.0)) * bloomStrength3;
+    vec3 bloomColor = mix(vec3(1.0, 0.97, 0.90), flareBaseColor, dist);
+
+    vec3 bloom = (bloom1 + bloom2 + bloom3) * bloomColor;
+
+    gl_FragColor = vec4(vec3(0.2, 0.5, 1.0) * color + finalFlare + bloom, 1.0);
+}
+</script>
+    <script>
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl');
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Trigger fullscreen on page load or user interaction ---
+        function requestFullscreen() {
+            if (canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            } else if (canvas.webkitRequestFullscreen) {
+                canvas.webkitRequestFullscreen();
+            } else if (canvas.mozRequestFullScreen) {
+                canvas.mozRequestFullScreen();
+            } else if (canvas.msRequestFullscreen) {
+                canvas.msRequestFullscreen();
+            }
+        }
+
+        // Try fullscreen on load, but also on user click (required by most browsers)
+        window.addEventListener('load', () => {
+            requestFullscreen();
+        });
+        canvas.addEventListener('click', () => {
+            requestFullscreen();
+            canvas.requestPointerLock();
+        });
+
+        // --- Hide the mouse cursor and capture pointer ---
+        canvas.style.cursor = "none";
+        canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
+        document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
+
+        canvas.addEventListener('click', () => {
+            canvas.requestPointerLock();
+        });
+
+        let mouse = [0.5, 0.5];
+        let mouseX = 0.5, mouseY = 0.5;
+
+        function clamp(v, min, max) {
+            return Math.max(min, Math.min(max, v));
+        }
+
+        document.addEventListener('pointerlockchange', lockChangeAlert, false);
+        document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+        function lockChangeAlert() {
+            if (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas) {
+                document.addEventListener("mousemove", updatePosition, false);
+            } else {
+                document.removeEventListener("mousemove", updatePosition, false);
+            }
+        }
+
+        function updatePosition(e) {
+            // Use movementX/Y to update mouse position, clamp to [0,1]
+            mouseX = clamp(mouseX + e.movementX / canvas.width, 0, 1);
+            mouseY = clamp(mouseY - e.movementY / canvas.height, 0, 1);
+            mouse = [mouseX, mouseY];
+        }
+
+        // fallback for initial mouse position before pointer lock
+        canvas.addEventListener('mousemove', e => {
+            if (document.pointerLockElement !== canvas && document.mozPointerLockElement !== canvas) {
+                mouse = [e.offsetX / canvas.width, 1 - e.offsetY / canvas.height];
+                mouseX = mouse[0];
+                mouseY = mouse[1];
+            }
+        });
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                throw new Error(gl.getShaderInfoLog(shader));
+            }
+            return shader;
+        }
+        function createProgram(gl, vsSource, fsSource) {
+            const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+            const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+            const program = gl.createProgram();
+            gl.attachShader(program, vs);
+            gl.attachShader(program, fs);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                throw new Error(gl.getProgramInfoLog(program));
+            }
+            return program;
+        }
+        const vsSource = document.getElementById('vertex-shader').textContent;
+        const fsSource = document.getElementById('fragment-shader').textContent;
+        const program = createProgram(gl, vsSource, fsSource);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 1, -1, -1, 1,
+            -1, 1, 1, -1, 1, 1
+        ]), gl.STATIC_DRAW);
+
+        const a_position = gl.getAttribLocation(program, 'a_position');
+        const u_time = gl.getUniformLocation(program, 'u_time');
+        const u_mouse = gl.getUniformLocation(program, 'u_mouse');
+        const u_resolution = gl.getUniformLocation(program, 'u_resolution');
+
+        function render(time) {
+            gl.useProgram(program);
+            gl.enableVertexAttribArray(a_position);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(u_time, time * 0.001);
+            gl.uniform2fv(u_mouse, mouse);
+            gl.uniform2f(u_resolution, canvas.width, canvas.height);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    </script>
+</body>
+
+</html>
