@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Basic 3D Platformer Game</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-family: sans-serif;
+            z-index: 10;
+        }
+
+        #UI_ROOT {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #background_menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://cdn.cloudflare.steamstatic.com/steam/apps/2204810/ss_fcfdcbfdf60e41c715fc6bd2c7d25e1bc9c43f92.1920x1080.jpg');
+            transform: scale(1.15);
+        }
+
+        #start_overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-family: sans-serif;
+            z-index: 1000;
+            cursor: none;
+            user-select: none;
+        }
+
+        body.hide-cursor,
+        #start_overlay {
+            cursor: none !important;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div id="info">The Backrooms | Programmed by MaybeBroken</div>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+    <div id="UI_ROOT">
+        <div id="background_menu" class="background_menu"></div>
+        <div id="player_menu_model" class="player_menu_model"></div>
+        <div id="game_menu"
+            style="position: absolute; z-index: 1100; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; display: none;">
+            <div style="color: #fff; font-size: 2.5em; margin-bottom: 1em; text-shadow: 0 2px 8px #000;">The Backrooms
+            </div>
+            <button id="start_button"
+                style="font-size: 1.5em; padding: 0.5em 2em; border-radius: 8px; border: none; background: #fff; color: #222; cursor: pointer; box-shadow: 0 2px 8px #000;">Start</button>
+        </div>
+    </div>
+    <div id="start_overlay" style="display:flex;">Press anywhere to begin</div>
+</body>
+
+<script>
+    // Await user input: show overlay, then menu, then fullscreen/pointer lock, then start game
+    function awaitUserInputAndStart() {
+        const overlay = document.getElementById('start_overlay');
+        const gameMenu = document.getElementById('game_menu');
+        const startButton = document.getElementById('start_button');
+        const backgroundMenu = document.getElementById('background_menu');
+
+        // Parallax effect for menu
+        let menuParallaxX = 0, menuParallaxY = 0;
+        function updateMenuParallax(x, y) {
+            backgroundMenu.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
+        }
+        function handleMenuParallax(e) {
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            menuParallaxX = (e.clientX - centerX) * -.15;
+            menuParallaxY = (e.clientY - centerY) * -.15;
+            updateMenuParallax(menuParallaxX, menuParallaxY);
+        }
+        // Set initial background position to center for menu
+        menuParallaxX = 0;
+        menuParallaxY = 0;
+        updateMenuParallax(menuParallaxX, menuParallaxY);
+        document.addEventListener('mousemove', handleMenuParallax);
+
+        function requestFullscreen() {
+            if (document.body.requestFullscreen) {
+                return document.body.requestFullscreen();
+            } else if (document.body.webkitRequestFullscreen) {
+                return document.body.webkitRequestFullscreen();
+            } else if (document.body.mozRequestFullScreen) {
+                return document.body.mozRequestFullScreen();
+            } else if (document.body.msRequestFullscreen) {
+                return document.body.msRequestFullscreen();
+            }
+            return Promise.resolve();
+        }
+
+        function requestPointerLock() {
+            if (document.body.requestPointerLock) {
+                document.body.requestPointerLock();
+            } else if (document.body.mozRequestPointerLock) {
+                document.body.mozRequestPointerLock();
+            }
+        }
+
+        async function showMenuAfterOverlay() {
+            overlay.style.display = 'none';
+            // Request fullscreen as soon as overlay is destroyed (user gesture)
+            try { await requestFullscreen(); } catch (e) { }
+            gameMenu.style.display = 'flex';
+            overlay.removeEventListener('mousedown', showMenuAfterOverlay);
+            overlay.removeEventListener('touchstart', showMenuAfterOverlay);
+        }
+
+        overlay.addEventListener('mousedown', showMenuAfterOverlay);
+        overlay.addEventListener('touchstart', showMenuAfterOverlay);
+
+        async function startGameSequence() {
+            gameMenu.style.display = 'none';
+            // Fade out background_menu
+            const backgroundMenu = document.getElementById('background_menu');
+            backgroundMenu.style.transition = 'opacity 0.7s';
+            backgroundMenu.style.opacity = '0';
+            // Remove menu parallax event when game starts
+            document.removeEventListener('mousemove', handleMenuParallax);
+            // Hide mouse cursor and request pointer lock only when game starts
+            document.body.classList.add('hide-cursor');
+            requestPointerLock();
+            // Wait for fade out before starting game
+            setTimeout(setupGame, 700);
+        }
+
+        startButton.addEventListener('click', startGameSequence);
+    }
+
+    function setupGame() {
+
+        // Ensure cursor stays hidden for the whole game
+        document.body.classList.add('hide-cursor');
+        window.addEventListener('mousedown', () => {
+            document.body.classList.add('hide-cursor');
+        });
+        window.addEventListener('touchstart', () => {
+            document.body.classList.add('hide-cursor');
+        });
+
+        const backgroundMenu = document.getElementById('background_menu');
+
+        // Parallax effect
+        let parallaxX = 0, parallaxY = 0;
+
+        function updateBackgroundParallax(x, y) {
+            backgroundMenu.style.backgroundPosition = `calc(50% + ${x}px) calc(50% + ${y}px)`;
+        }
+
+        function handleBackgroundParallax(e) {
+            // If pointer is locked, ignore this event (handled by mousemove)
+            if (document.pointerLockElement === document.body) return;
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            parallaxX = (e.clientX - centerX) * -.15;
+            parallaxY = (e.clientY - centerY) * -.15;
+            updateBackgroundParallax(parallaxX, parallaxY);
+        }
+
+        function handlePointerLockMove(e) {
+            // Only update if pointer is locked
+            if (document.pointerLockElement !== document.body) return;
+            // e.movementX/Y are relative deltas
+            parallaxX += e.movementX * -.15;
+            parallaxY += e.movementY * -.15;
+            updateBackgroundParallax(parallaxX, parallaxY);
+        }
+
+        // Set initial background position to center
+        parallaxX = 0;
+        parallaxY = 0;
+        updateBackgroundParallax(parallaxX, parallaxY);
+
+        document.addEventListener('mousemove', handleBackgroundParallax);
+        document.addEventListener('pointerlockchange', () => {
+            // Optionally reset parallax when pointer lock is lost
+            if (document.pointerLockElement !== document.body) {
+                // Optionally clamp or reset parallaxX/parallaxY here if needed
+            }
+        });
+        // Listen for mousemove events for pointer lock
+        document.addEventListener('mousemove', handlePointerLockMove);
+
+        function rgbToHex(r, g, b) {
+            return (r << 16) | (g << 8) | b;
+        }
+        function hexToRgb(hex) {
+            return {
+                r: (hex >> 16) & 0xff,
+                g: (hex >> 8) & 0xff,
+                b: hex & 0xff
+            };
+        }
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(rgbToHex(0.5, 0.5, 0.5));
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 2, 5);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Game loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+
+    // Start the process after DOM is ready
+    window.addEventListener('DOMContentLoaded', awaitUserInputAndStart);
+</script>
+
+</html>
