@@ -244,13 +244,26 @@
         // Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
         // Lighting
         const light = new THREE.DirectionalLight(0xffffff, 1);
         light.position.set(5, 10, 7);
+        light.castShadow = true;
+        light.shadow.mapSize.width = 4096;
+        light.shadow.mapSize.height = 4096;
+        light.shadow.camera.near = 1;
+        light.shadow.camera.far = 50;
+        light.shadow.camera.left = -20;
+        light.shadow.camera.right = 20;
+        light.shadow.camera.top = 20;
+        light.shadow.camera.bottom = -20;
         scene.add(light);
         scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        // Optionally, for debugging:
+        // scene.add(new THREE.CameraHelper(light.shadow.camera));
 
         const keys = {};
         window.addEventListener('keydown', e => keys[e.code] = true);
@@ -263,16 +276,181 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        scene.fog = new THREE.FogExp2(0x000000, 0.01);
+        // Create a 2D floor (large, flat box)
+        const floorGeometry = new THREE.BoxGeometry(50, 0.2, 50);
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x888866, emissive: 0x999999, emissiveIntensity: 0.5 });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.position.y = 0; // Slightly below y=0
+        floor.castShadow = false;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        camera.position.y = 1.8;
+        // Use a playerCam object for all camera movement and rotation
+        const playerCam = new THREE.Object3D();
+        const cameraPitch = new THREE.Object3D();
+        playerCam.add(cameraPitch);
+        cameraPitch.add(camera);
+        scene.add(playerCam);
+
+        // Set initial position
+        playerCam.position.set(0, 1.8, 5);
+        camera.position.set(0, 0, 0);
+        cameraPitch.rotation.x = 0;
+
+        // Track pitch/yaw angles
+        let yaw = 0;
+        let pitch = 0;
+
+        // Player mesh
+        const playerGeometry = new THREE.BoxGeometry(0.5, 1.8, 0.5);
+        const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+        const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+        playerMesh.position.set(0, 1.8, 0);
+        playerMesh.castShadow = true;
+        playerMesh.receiveShadow = true;
+        // Place player mesh in the world, not as a child of playerCam
+        scene.add(playerMesh);
+
+        // Jump state
+        let jumping = false;
+        let jumpStartY = 1.5;
+        let jumpTargetY = 2.5;
+        let jumpProgress = 0;
+        const jumpDuration = 0.25; // seconds
+        let lastTime = performance.now();
+
+        document.addEventListener('mousemove', function rotateCamera(e) {
+            if (document.pointerLockElement !== document.body) return;
+            yaw -= e.movementX * 0.002;
+            pitch -= e.movementY * 0.002;
+            // Clamp pitch
+            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+            playerCam.rotation.y = yaw;
+            cameraPitch.rotation.x = pitch;
+        });
+
         // Game loop
         function animate() {
             requestAnimationFrame(animate);
+            let now = performance.now();
+            let delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            // Handle player movement (move playerCam, which holds the camera)
+            let moveSpeed = 0.16;
+            let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerCam.quaternion);
+            let right = new THREE.Vector3(1, 0, 0).applyQuaternion(playerCam.quaternion);
+            forward.y = 0;
+            right.y = 0;
+            forward.normalize();
+            right.normalize();
+
+            if (keys['KeyW']) playerCam.position.add(forward.clone().multiplyScalar(moveSpeed));
+            if (keys['KeyS']) playerCam.position.add(forward.clone().multiplyScalar(-moveSpeed));
+            if (keys['KeyA']) playerCam.position.add(right.clone().multiplyScalar(-moveSpeed));
+            if (keys['KeyD']) playerCam.position.add(right.clone().multiplyScalar(moveSpeed));
+            if (keys['KeyQ']) playerCam.rotation.y -= 0.01;
+            if (keys['KeyE']) playerCam.rotation.y += 0.01;
+
+            // Crouch logic (cannot crouch while jumping)
+            if (!jumping) {
+                if (keys['ShiftLeft']) {
+                    playerCam.position.y = 1.0;
+                } else if (playerCam.position.y < 1.5) {
+                    playerCam.position.y += 0.1;
+                    if (playerCam.position.y > 1.5) playerCam.position.y = 1.5;
+                }
+            }
+
+            // Jump logic (lerp)
+            if (keys['Space'] && !jumping && playerCam.position.y >= 1.49) {
+                jumping = true;
+                jumpStartY = playerCam.position.y;
+                jumpTargetY = jumpStartY + 1.0;
+                jumpProgress = 0;
+            }
+            if (jumping) {
+                jumpProgress += delta / jumpDuration;
+                if (jumpProgress >= 1) {
+                    jumpProgress = 1;
+                    jumping = false;
+                }
+                // Lerp up, then let gravity pull down
+                playerCam.position.y = jumpStartY + (jumpTargetY - jumpStartY) * easeOutQuad(jumpProgress);
+            } else {
+                // Handle gravity
+                if (playerCam.position.y > (keys['ShiftLeft'] ? 1.0 : 1.5)) {
+                    playerCam.position.y -= 0.05;
+                    if (playerCam.position.y < (keys['ShiftLeft'] ? 1.0 : 1.5)) playerCam.position.y = (keys['ShiftLeft'] ? 1.0 : 1.5);
+                }
+            }
+            // Handle floor collision
+            if (playerCam.position.y < (keys['ShiftLeft'] ? 1.0 : 1.5)) {
+                playerCam.position.y = (keys['ShiftLeft'] ? 1.0 : 1.5);
+                jumping = false;
+            }
+            // Make the light follow the player
+            light.position.set(
+                playerCam.position.x + 5,
+                playerCam.position.y + 10,
+                playerCam.position.z + 7
+            );
+            light.target.position.set(
+                playerCam.position.x,
+                playerCam.position.y,
+                playerCam.position.z
+            );
+            scene.add(light.target);
+
+            // Update player mesh position to match playerCam (but offset so you can see it)
+            playerMesh.position.set(
+                playerCam.position.x,
+                playerCam.position.y - 0.9, // center of mesh at feet
+                playerCam.position.z
+            );
             renderer.render(scene, camera);
         }
+
+        // Easing function for jump (ease out)
+        function easeOutQuad(t) {
+            return t * (2 - t);
+        }
+
         animate();
     }
 
     // Start the process after DOM is ready
     window.addEventListener('DOMContentLoaded', awaitUserInputAndStart);
+
+    const NPC_ARR = [];
+    class NPC {
+        constructor() {
+            this.geometry = new THREE.BoxGeometry(0.5, 1.8, 0.5);
+            this.material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+            this.mesh = new THREE.Mesh(this.geometry, this.material);
+            this.mesh.position.set(Math.random() * 10 - 5, 1.8, Math.random() * 10 - 5);
+            this.mesh.castShadow = true;
+            this.mesh.receiveShadow = true;
+        }
+    }
+
+    class MULTIPlAYER {
+        constructor() {
+            this.geometry = new THREE.BoxGeometry(0.5, 1.8, 0.5);
+            this.material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+            this.mesh = new THREE.Mesh(this.geometry, this.material);
+            this.mesh.position.set(Math.random() * 10 - 5, 1.8, Math.random() * 10 - 5);
+            this.inventory = [];
+        }
+    }
+
+    function createNPC() {
+        const npc = new NPC();
+        scene.add(npc.mesh);
+        NPC_ARR.push(npc);
+    }
 </script>
 
 </html>
