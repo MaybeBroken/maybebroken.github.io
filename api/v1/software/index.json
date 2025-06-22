@@ -4,5 +4,11 @@
         "currentVersion": "0.0.6",
         "currentPackageUrl": "https://github.com/MaybeBroken/OP-Media-Player/releases/download/v0.0.6/0.0.6.zip",
         "currentReleaseDate": "2025-05-10"
+    },
+    {
+        "name": "SlipstreamEngine",
+        "currentVersion": "0.0.1",
+        "currentPackageUrl": "https://github.com/MaybeBroken/spaceplace-slipstream-engine/releases/download/v0.0.1/0.0.1.zip",
+        "currentReleaseDate": "2025-06-21"
     }
 ]
