@@ -684,11 +684,6 @@
             }
 
             let wsUrl = serverText.trim();
-            // Browsers require wss on https pages; upgrade ws->wss if needed
-            try {
-                const pageIsSecure = location.protocol === 'https:';
-                if (pageIsSecure && wsUrl.startsWith('ws://')) wsUrl = 'wss://' + wsUrl.slice('ws://'.length);
-            } catch { }
 
             state.wsUrl = wsUrl;
             connectWS();
