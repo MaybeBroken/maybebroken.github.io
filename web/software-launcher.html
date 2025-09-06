@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MaybeBroken Software Launcher (Web)</title>
+    <meta name="color-scheme" content="dark light" />
+    <style>
+        :root {
+            --bg: #0b0f0c;
+            --bg-elev: #0f1411;
+            --panel: #0d120f;
+            --accent: #32cd32;
+            /* limegreen */
+            --accent-2: #9aff9a;
+            --text: #f3f6f4;
+            --muted: #a9b3ac;
+            --error: #ff6b6b;
+            --warn: #ffb86c;
+            --ok: #4cd964;
+            --card: #0e1310;
+            --card-border: #1d2a21;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            --radius: 14px;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 10% -10%, rgba(50, 205, 50, 0.18) 0%, rgba(50, 205, 50, 0.05) 40%, transparent 70%),
+                linear-gradient(180deg, #0a0f0c 0%, #090c0a 60%, #060807 100%);
+        }
+
+        .container {
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #32cd32, #0c7e0c);
+            border: 1px solid rgba(154, 255, 154, 0.6);
+            box-shadow: 0 2px 10px rgba(50, 205, 50, 0.35) inset, 0 4px 18px rgba(50, 205, 50, 0.25);
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .title {
+            font-weight: 750;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--warn);
+            box-shadow: 0 0 0 0 rgba(50, 205, 50, 0.0);
+            transition: 280ms ease;
+        }
+
+        .dot.ok {
+            background: var(--ok);
+            box-shadow: 0 0 0 6px rgba(76, 217, 100, 0.12);
+        }
+
+        .dot.err {
+            background: var(--error);
+        }
+
+        .tabs {
+            margin-top: 18px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(10px);
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .tab-btn {
+            appearance: none;
+            border: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: var(--muted);
+            background: transparent;
+            cursor: pointer;
+            transition: 180ms ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            color: #0b0f0c;
+            background: var(--accent);
+        }
+
+        main {
+            margin-top: 18px;
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .login {
+            max-width: 520px;
+            margin: 40px auto;
+            padding: 26px;
+        }
+
+        .login h2 {
+            margin: 6px 0 16px;
+            font-weight: 700;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .input {
+            background: #0a0f0c;
+            color: var(--text);
+            border: 1px solid rgba(154, 255, 154, 0.3);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 1rem;
+            outline: none;
+            transition: 180ms ease;
+        }
+
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 6px rgba(50, 205, 50, 0.12);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 0;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #0b0f0c;
+            font-weight: 700;
+            box-shadow: 0 6px 18px rgba(50, 205, 50, 0.25);
+            transition: transform 120ms ease, box-shadow 180ms ease, filter 180ms ease, opacity 120ms ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 10px 26px rgba(50, 205, 50, 0.33);
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+        }
+
+        .btn.ghost:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .btn.muted {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: none;
+        }
+
+        .btn.muted:hover {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .btn.small {
+            padding: 8px 10px;
+            font-size: 0.95rem;
+        }
+
+        .btn[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .products {
+            padding: 10px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+            transition: border-color 160ms ease, transform 120ms ease;
+        }
+
+        .card:hover {
+            border-color: rgba(154, 255, 154, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .card .name {
+            font-weight: 700;
+        }
+
+        .card .desc {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--accent-2);
+        }
+
+        .progress {
+            height: 9px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .progress>i {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #77ff77);
+            transition: width 120ms linear;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .fade-in {
+            animation: fade 350ms ease both;
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo" aria-hidden="true">M</div>
+                <div>
+                    <div class="title">MaybeBroken Software Launcher</div>
+                    <div id="subtitle" class="subtitle">Connecting to server…</div>
+                </div>
+            </div>
+            <div class="status" id="status">
+                <span class="dot" id="statusDot"></span>
+                <span id="statusText">Offline</span>
+            </div>
+        </header>
+
+        <nav class="tabs" role="tablist">
+            <button class="tab-btn active" data-tab="home" aria-selected="true">Home</button>
+            <button class="tab-btn" data-tab="account">Account</button>
+        </nav>
+
+        <main>
+            <!-- Login Panel -->
+            <section id="loginPanel" class="panel login fade-in" aria-labelledby="login-title">
+                <h2 id="login-title">Welcome</h2>
+                <p class="note">Enter your access key to authenticate.</p>
+                <div class="field" style="margin-top: 12px;">
+                    <label for="accessKey" class="subtitle">Access key</label>
+                    <input id="accessKey" class="input" type="password" placeholder="••••-••••-••••"
+                        autocomplete="off" />
+                </div>
+                <div class="row" style="margin-top: 14px;">
+                    <button id="loginBtn" class="btn">Login</button>
+                    <button id="pasteBtn" class="btn ghost" title="Paste from clipboard">Paste</button>
+                </div>
+                <p class="note" id="loginHint" style="margin-top: 8px;">Tip: Your key is saved locally for auto-login
+                    next time.</p>
+            </section>
+
+            <!-- App Panel -->
+            <section id="appPanel" class="panel hidden fade-in" aria-live="polite">
+                <div class="toolbar">
+                    <div class="row">
+                        <button id="refreshBtn" class="btn small">Refresh product list</button>
+                        <button id="clearCacheBtn" class="btn small muted">Clear cache</button>
+                    </div>
+                    <div class="spacer"></div>
+                    <div class="note" id="accountLabel">Account: Guest</div>
+                </div>
+                <div id="homeTab" class="products" role="tabpanel" aria-labelledby="tab-home">
+                    <div id="loadingProducts" class="note" style="padding: 16px;">Loading products…</div>
+                    <div id="grid" class="grid" aria-live="polite"></div>
+                </div>
+                <div id="accountTab" class="products hidden" role="tabpanel" aria-labelledby="tab-account">
+                    <div class="panel" style="padding: 18px;">
+                        <div class="row" style="justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 6px;"
+                                    id="accountLabelMain">Account</div>
+                                <div class="note">Status: <span id="acctStatus">Active</span></div>
+                            </div>
+                            <button id="logoutBtn" class="btn ghost">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Debug Panel (toggle with ?debug=1) -->
+        <details id="debugPanel" class="panel" style="margin-top: 16px; padding: 10px;" hidden>
+            <summary>Debug log</summary>
+            <pre id="debugLog"
+                style="white-space: pre-wrap; font-size: 12px; line-height: 1.3; max-height: 320px; overflow: auto; margin: 8px 0 0 0;"></pre>
+        </details>
+    </div>
+
+    <script>
+        // --- Simple, readable web launcher ---
+        // Keeps the same server entrypoint and auth call: fetch server_location.dat, then send AUTH_ATTEMPT+||<key> via WebSocket.
+
+        const api = {
+            serverLocationUrl: 'https://maybebroken.github.io/api/v1/server_location.dat',
+            // Follow Python client's protocol exactly
+            authAttempt: (key) => `AUTH_ATTEMPT+||${key}`,
+            dlProgmapRequest: (product) => `DL_PROGMAP_REQUEST+||${product}`,
+        };
+
+        // --- DOM helpers ---
+        const $ = (sel, root = document) => root.querySelector(sel);
+        const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+        // --- Elements ---
+        const statusDot = $('#statusDot');
+        const statusText = $('#statusText');
+        const subtitle = $('#subtitle');
+        const loginPanel = $('#loginPanel');
+        const accessKeyEl = $('#accessKey');
+        const loginBtn = $('#loginBtn');
+        const pasteBtn = $('#pasteBtn');
+        const loginHint = $('#loginHint');
+        const appPanel = $('#appPanel');
+        const accountLabel = $('#accountLabel');
+        const accountLabelMain = $('#accountLabelMain');
+        const refreshBtn = $('#refreshBtn');
+        const clearCacheBtn = $('#clearCacheBtn');
+        const logoutBtn = $('#logoutBtn');
+        const grid = $('#grid');
+        const loadingProducts = $('#loadingProducts');
+        const tabsEl = $('.tabs');
+        const homeTab = $('#homeTab');
+        const accountTab = $('#accountTab');
+        // Debug elements
+        const debugPanel = $('#debugPanel');
+        const debugLog = $('#debugLog');
+
+        // --- Local storage keys ---
+        const STORE = {
+            key: 'mb_login_key',
+            installed: 'mb_installed_programs', // { [name]: downloadedFileName }
+            urls: 'mb_download_urls',          // { [name]: url }
+            updates: 'mb_update_flags',        // { [name]: bool }
+        };
+
+        // JSON storage helpers
+        const load = (k, fallback) => {
+            try { const s = localStorage.getItem(k); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
+        };
+        const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } };
+
+        // App state
+        const state = {
+            // ...existing fields...
+            ws: null,
+            wsUrl: null,
+            account: 'Guest',
+            products: [],
+            installed: load(STORE.installed, {}),
+            urls: load(STORE.urls, {}),
+            updates: load(STORE.updates, {}),
+            connecting: false,
+            authed: false,
+            authTimer: null,
+        };
+
+        const isDebug = /[?&]debug=1/.test(location.search);
+        if (isDebug && debugPanel) debugPanel.hidden = false;
+        function logDebug(...args) {
+            try {
+                if (isDebug && debugLog) {
+                    const s = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+                    debugLog.textContent += s + '\n';
+                    debugLog.scrollTop = debugLog.scrollHeight;
+                }
+            } catch { }
+            try { console.log('[Launcher]', ...args); } catch { }
+        }
+
+        // --- UI wiring ---
+        function setStatus(kind, text) {
+            statusDot.classList.remove('ok', 'err');
+            if (kind === 'ok') statusDot.classList.add('ok');
+            if (kind === 'err') statusDot.classList.add('err');
+            statusText.textContent = text;
+        }
+
+        function showLogin() {
+            appPanel.classList.add('hidden');
+            loginPanel.classList.remove('hidden');
+            accessKeyEl.focus();
+            subtitle.textContent = 'Please login to continue';
+            clearAuthTimer();
+        }
+
+        function showApp() {
+            loginPanel.classList.add('hidden');
+            appPanel.classList.remove('hidden');
+            accountLabel.textContent = `Logged in as ${state.account}`;
+            accountLabelMain.textContent = `Account: ${state.account}`;
+            subtitle.textContent = 'Connected';
+        }
+
+        function switchTab(name) {
+            $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+            homeTab.classList.toggle('hidden', name !== 'home');
+            accountTab.classList.toggle('hidden', name !== 'account');
+        }
+
+        tabsEl.addEventListener('click', (e) => {
+            if (!(e.target instanceof HTMLElement)) return;
+            const btn = e.target.closest('.tab-btn');
+            if (btn) switchTab(btn.dataset.tab);
+        });
+
+        loginBtn.addEventListener('click', tryLogin);
+        accessKeyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) { accessKeyEl.value = text.trim(); accessKeyEl.focus(); }
+            } catch { }
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            // Re-auth to refresh product list (matches desktop behavior)
+            const key = localStorage.getItem(STORE.key);
+            if (state.ws && key) {
+                send(api.authAttempt(key));
+                setStatus('ok', 'Refreshing…');
+            } else {
+                showLogin();
+            }
+        });
+
+        clearCacheBtn.addEventListener('click', () => {
+            if (!confirm('Clear cached links, update flags, and local install markers?')) return;
+            state.installed = {}; save(STORE.installed, state.installed);
+            state.urls = {}; save(STORE.urls, state.urls);
+            state.updates = {}; save(STORE.updates, state.updates);
+            renderProducts();
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem(STORE.key);
+            state.authed = false; state.account = 'Guest';
+            setStatus('ok', 'Connected');
+            showLogin();
+        });
+
+        function setUpdateFlag(name, val) {
+            state.updates[name] = !!val; save(STORE.updates, state.updates);
+        }
+
+        // --- Rendering ---
+        function renderProducts() {
+            loadingProducts.classList.toggle('hidden', state.products.length > 0);
+            grid.innerHTML = '';
+            for (const p of state.products) {
+                grid.appendChild(renderProductCard(p));
+            }
+        }
+
+        function renderProductCard(product) {
+            const name = product.name || product.product || product || 'Unnamed';
+            const desc = product.description || '';
+            const version = product.version ? `v${product.version}` : '';
+            const installed = !!state.installed[name];
+            const needsUpdate = !!state.updates[name];
+
+            const el = document.createElement('div');
+            el.className = 'card fade-in';
+            el.innerHTML = `
+					<div class="row" style="justify-content: space-between; align-items: start; gap: 6px;">
+						<div>
+							<div class="name">${escapeHtml(name)}</div>
+							<div class="desc">${escapeHtml(desc)}</div>
+						</div>
+						<div class="badge" title="${installed ? 'Downloaded locally' : 'Not downloaded'}">
+							<span class="dot ${installed ? 'ok' : ''}" style="width: 8px; height: 8px;"></span>
+							${installed ? 'Ready' : 'Not installed'}
+						</div>
+					</div>
+					<div class="note">${version}</div>
+					<div class="progress" aria-hidden="true" hidden><i></i></div>
+					<div class="row" style="justify-content: flex-start; gap: 8px;">
+						<button class="btn small installBtn">${installed ? (needsUpdate ? 'Update' : 'Re-download') : 'Download'}</button>
+						<button class="btn small muted uninstallBtn" ${installed ? '' : 'disabled'}>Remove</button>
+					</div>
+					<div class="note" style="font-size: 0.85rem;">${needsUpdate ? 'Update available' : '&nbsp;'}</div>
+				`;
+
+            const progress = $('.progress', el);
+            const bar = $('i', progress);
+            const installBtn = $('.installBtn', el);
+            const uninstallBtn = $('.uninstallBtn', el);
+
+            installBtn.addEventListener('click', async () => {
+                // Ask server for latest URL (keeps API flow close to desktop)
+                requestProductUrl(name, false, {
+                    onProgress: (pct) => {
+                        progress.hidden = false; bar.style.width = `${pct}%`;
+                    }, onDone: (fileName) => {
+                        state.installed[name] = fileName || true; save(STORE.installed, state.installed);
+                        setUpdateFlag(name, false);
+                        renderProducts();
+                    }, onFail: () => {
+                        progress.hidden = true; bar.style.width = '0%';
+                    }
+                });
+            });
+
+            uninstallBtn.addEventListener('click', () => {
+                if (!confirm(`Remove local download marker for ${name}?`)) return;
+                delete state.installed[name]; save(STORE.installed, state.installed);
+                setUpdateFlag(name, false);
+                renderProducts();
+            });
+
+            return el;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // --- Downloads (with progress if CORS allows) ---
+        async function downloadWithProgress(url, onProgress) {
+            try {
+                const res = await fetch(url, { mode: 'cors' });
+                if (!res.ok || !res.body) throw new Error('No stream');
+                const total = Number(res.headers.get('Content-Length')) || 0;
+                const reader = res.body.getReader();
+                let received = 0; const chunks = [];
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value); received += value.length;
+                    if (total && onProgress) onProgress((received / total) * 100);
+                }
+                const blob = new Blob(chunks);
+                const fileName = safeFileNameFromUrl(url);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob); a.download = fileName;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+                return fileName;
+            } catch (e) {
+                // Fallback: open in new tab if blocked
+                window.open(url, '_blank');
+                return safeFileNameFromUrl(url);
+            }
+        }
+
+        function safeFileNameFromUrl(url) {
+            try { const u = new URL(url); return (u.pathname.split('/').pop() || 'download.bin'); } catch { return 'download.bin'; }
+        }
+
+        // --- WebSocket connection ---
+        async function init() {
+            setStatus('', 'Resolving server…');
+            const serverText = await fetchServerLocation();
+            if (!serverText) {
+                setStatus('err', 'Server location unavailable');
+                subtitle.textContent = 'Server location unavailable';
+                showLogin();
+                return;
+            }
+
+            let wsUrl = serverText.trim();
+            // Browsers require wss on https pages; upgrade ws->wss if needed
+            try {
+                const pageIsSecure = location.protocol === 'https:';
+                if (pageIsSecure && wsUrl.startsWith('ws://')) wsUrl = 'wss://' + wsUrl.slice('ws://'.length);
+            } catch { }
+
+            state.wsUrl = wsUrl;
+            connectWS();
+        }
+
+        async function fetchServerLocation() {
+            try {
+                const res = await fetch(api.serverLocationUrl, { cache: 'no-store' });
+                if (!res.ok) return '';
+                const text = await res.text();
+                return text || '';
+            } catch { return ''; }
+        }
+
+        function connectWS() {
+            if (!state.wsUrl) return;
+            if (state.connecting) return;
+            state.connecting = true;
+            subtitle.textContent = 'Connecting…';
+            setStatus('', 'Connecting…');
+            try {
+                const ws = new WebSocket(state.wsUrl);
+                state.ws = ws;
+                ws.addEventListener('open', () => {
+                    state.connecting = false;
+                    setStatus('ok', 'Online'); subtitle.textContent = 'Connected';
+                    // Register this client with the server (raw string expected)
+                    try { ws.send('WS_CLIENT_REGISTER'); } catch { }
+                    onConnected();
+                });
+                ws.addEventListener('message', (ev) => onMessage(ev.data));
+                ws.addEventListener('close', () => {
+                    state.authed = false; setStatus('', 'Reconnecting…');
+                    // simple retry
+                    setTimeout(connectWS, 1200);
+                });
+                ws.addEventListener('error', (e) => {
+                    logDebug('WS error', e?.message || e);
+                    setStatus('err', 'Connection error');
+                });
+            } catch (e) {
+                state.connecting = false; setStatus('err', 'Failed to connect');
+            }
+        }
+
+        function send(text) {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                try {
+                    state.ws.send(JSON.stringify(text));
+                } catch (e) {
+                    logDebug('Failed to JSON encode outbound', e?.message || e);
+                }
+            }
+        }
+
+        function onConnected() {
+            // mirror desktop: on connect, fade and try auto-login
+            const savedKey = localStorage.getItem(STORE.key);
+            if (savedKey) {
+                logDebug('Auto AUTH_ATTEMPT');
+                send(api.authAttempt(savedKey));
+                startAuthTimer();
+                subtitle.textContent = 'Authenticating…';
+            } else {
+                showLogin();
+            }
+        }
+
+        function tryLogin() {
+            const key = accessKeyEl.value.trim();
+            if (!key) return;
+            loginBtn.disabled = true;
+            subtitle.textContent = 'Authenticating…';
+            logDebug('Sending AUTH_ATTEMPT');
+            send(api.authAttempt(key));
+            startAuthTimer();
+            // save locally for auto-login on refresh
+            localStorage.setItem(STORE.key, key);
+            setTimeout(() => (loginBtn.disabled = false), 800);
+        }
+
+        function onMessage(data) {
+            logDebug('RX raw:', data);
+            let decoded = null;
+            try { decoded = JSON.parse(data); } catch { /* not JSON */ }
+            if (typeof decoded === 'string') {
+                logDebug('RX str:', decoded);
+                handleDelimited(decoded);
+                return;
+            }
+            if (decoded && typeof decoded === 'object') {
+                logDebug('RX obj:', decoded);
+                handleJson(decoded);
+                return;
+            }
+            handleDelimited(String(data));
+        }
+
+        function handleJson(msg) {
+            switch (msg.type) {
+                case 'AUTH_OK': {
+                    state.authed = true;
+                    state.account = msg.account || 'User';
+                    accountLabel.textContent = `Logged in as ${state.account}`;
+                    accountLabelMain.textContent = `Account: ${state.account}`;
+                    showApp();
+                    clearAuthTimer();
+                    if (Array.isArray(msg.products)) { state.products = msg.products; renderProducts(); }
+                    requestAllProductUrls(true);
+                    break;
+                }
+                case 'AUTH_SUCCESS':
+                case 'AUTHENTICATED':
+                case 'LOGIN_OK': {
+                    state.authed = true;
+                    state.account = msg.account || msg.user || 'User';
+                    accountLabel.textContent = `Logged in as ${state.account}`;
+                    accountLabelMain.textContent = `Account: ${state.account}`;
+                    showApp();
+                    clearAuthTimer();
+                    if (Array.isArray(msg.products)) { state.products = msg.products; renderProducts(); }
+                    requestAllProductUrls(true);
+                    break;
+                }
+                case 'AUTH_FAIL':
+                case 'AUTH_DENIED':
+                case 'INVALID_KEY':
+                case 'ERROR_AUTH': {
+                    state.authed = false; showLogin(); subtitle.textContent = 'Auth failed';
+                    clearAuthTimer();
+                    break;
+                }
+                // Other JSON messages are not used by Python server
+            }
+        }
+
+        function handleDelimited(text) {
+            const parts = text.split('+||');
+            const type = parts[0];
+            switch (type) {
+                case 'AUTH_OK': {
+                    // Not used by Python client, but treat as success
+                    state.authed = true;
+                    state.account = parts[1] || 'User';
+                    accountLabel.textContent = `Logged in as ${state.account}`;
+                    accountLabelMain.textContent = `Account: ${state.account}`;
+                    showApp();
+                    clearAuthTimer();
+                    requestAllProductUrls(true);
+                    break;
+                }
+                case 'AUTH_SUCCESS': {
+                    // Python server: parts[1] is JSON { name, products }
+                    try {
+                        const payload = JSON.parse(parts[1] || '{}');
+                        state.authed = true;
+                        state.account = payload.name || 'User';
+                        accountLabel.textContent = `Logged in as ${state.account}`;
+                        accountLabelMain.textContent = `Account: ${state.account}`;
+                        showApp();
+                        clearAuthTimer();
+                        if (Array.isArray(payload.products)) { state.products = payload.products; renderProducts(); }
+                        requestAllProductUrls(true);
+                    } catch (e) {
+                        // If parsing fails, fallback to generic success
+                        state.authed = true;
+                        showApp();
+                        clearAuthTimer();
+                    }
+                    break;
+                }
+                case 'AUTHENTICATED':
+                case 'LOGIN_OK': {
+                    // Best-effort success handlers
+                    state.authed = true;
+                    state.account = parts[1] || 'User';
+                    accountLabel.textContent = `Logged in as ${state.account}`;
+                    accountLabelMain.textContent = `Account: ${state.account}`;
+                    showApp();
+                    clearAuthTimer();
+                    requestAllProductUrls(true);
+                    break;
+                }
+                case 'AUTH_FAIL':
+                case 'AUTH_DENIED':
+                case 'INVALID_KEY':
+                case 'ERROR_AUTH': {
+                    state.authed = false; showLogin(); subtitle.textContent = 'Auth failed';
+                    clearAuthTimer();
+                    break;
+                }
+                case 'DL_PROGMAP_RESPONSE': {
+                    const product = parts[1];
+                    const url = parts[2];
+                    if (!product || !url) break;
+                    cacheUrl(product, url);
+                    // Check-only handling mirrors desktop client
+                    if (state.checkOnly && state.checkOnly.has(product)) {
+                        const prev = state.urls[product];
+                        // cacheUrl already updated state.urls
+                        if (prev && url && prev !== url && state.installed[product]) {
+                            setUpdateFlag(product, true);
+                        }
+                        state.checkOnly.delete(product);
+                        renderProducts();
+                    } else if (pendingDownloads.has(product)) {
+                        const ctx = pendingDownloads.get(product); pendingDownloads.delete(product);
+                        performDownload(product, url, ctx);
+                    }
+                    break;
+                }
+            }
+
+            // Heuristic fallback if server uses different phrasing
+            if (/AUTH/i.test(text)) {
+                if (/OK|SUCCESS|AUTHENTICATED/i.test(text)) {
+                    state.authed = true; showApp(); clearAuthTimer(); requestAllProductUrls(true);
+                } else if (/FAIL|DENIED|INVALID|ERROR/i.test(text)) {
+                    state.authed = false; showLogin(); subtitle.textContent = 'Auth failed'; clearAuthTimer();
+                }
+            }
+        }
+
+        function cacheUrl(product, url) {
+            state.urls[product] = url; save(STORE.urls, state.urls);
+        }
+
+        function requestAllProductUrls(checkOnly = true) {
+            if (checkOnly) {
+                if (!state.checkOnly) state.checkOnly = new Set();
+            }
+            for (const p of state.products) {
+                const name = p.name || p.product || 'Unnamed';
+                if (checkOnly) state.checkOnly.add(name);
+                send(api.dlProgmapRequest(name));
+            }
+        }
+
+        const pendingDownloads = new Map(); // product -> { onProgress, onDone, onFail }
+        function requestProductUrl(product, checkOnly, ctx) {
+            // If we already have a cached URL, try download immediately
+            const cached = state.urls[product];
+            if (cached && !checkOnly) {
+                performDownload(product, cached, ctx);
+                // Also ask server for fresh url in background
+                if (!state.checkOnly) state.checkOnly = new Set();
+                state.checkOnly.add(product);
+                send(api.dlProgmapRequest(product));
+                return;
+            }
+
+            // Ask server; when response arrives, handleJson/handleDelimited completes download
+            if (!checkOnly) pendingDownloads.set(product, ctx || {});
+            if (checkOnly) {
+                if (!state.checkOnly) state.checkOnly = new Set();
+                state.checkOnly.add(product);
+            }
+            send(api.dlProgmapRequest(product));
+        }
+
+        async function performDownload(product, url, ctx = {}) {
+            try {
+                const fileName = await downloadWithProgress(url, (pct) => ctx.onProgress && ctx.onProgress(pct));
+                ctx.onDone && ctx.onDone(fileName);
+            } catch (e) {
+                console.error('Download failed', e);
+                alert(`Download failed for ${product}.\nYou can try opening the URL directly:\n${url}`);
+                ctx.onFail && ctx.onFail(e);
+            }
+        }
+
+        function startAuthTimer() {
+            clearAuthTimer();
+            state.authTimer = setTimeout(() => {
+                if (!state.authed) {
+                    setStatus('ok', 'Connected');
+                    subtitle.textContent = 'No auth response';
+                    showLogin();
+                    logDebug('Auth timed out – no response from server');
+                }
+            }, 8000);
+        }
+        function clearAuthTimer() { if (state.authTimer) { clearTimeout(state.authTimer); state.authTimer = null; } }
+
+        // Init + auto-login if key exists
+        (async function bootstrap() {
+            switchTab('home');
+            const savedKey = localStorage.getItem(STORE.key);
+            if (savedKey) loginHint.textContent = 'Saved key found. You will be auto-logged in on connect.';
+            await init();
+        })();
+    </script>
+</body>
+
+</html>
