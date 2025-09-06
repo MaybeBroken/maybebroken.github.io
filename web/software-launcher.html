@@ -705,6 +705,11 @@
             subtitle.textContent = 'Connecting…';
             setStatus('', 'Connecting…');
             try {
+                const pageIsSecure = location.protocol === 'https:';
+                if (pageIsSecure && wsUrl.startsWith('ws://')) wsUrl = 'wss://' + wsUrl.slice('ws://'.length);
+                console.log('Updating WS URL to', wsUrl);
+            } catch { }
+            try {
                 const ws = new WebSocket(state.wsUrl);
                 state.ws = ws;
                 ws.addEventListener('open', () => {
