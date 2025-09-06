@@ -726,6 +726,7 @@
                 });
             } catch (e) {
                 state.connecting = false; setStatus('err', 'Failed to connect');
+                setTimeout(connectWS, 1200);
             }
         }
 
