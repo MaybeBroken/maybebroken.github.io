@@ -49,6 +49,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            position: relative;
         }
 
         .brand {
@@ -86,6 +87,8 @@
             gap: 10px;
             color: var(--muted);
             font-size: 0.95rem;
+            cursor: pointer;
+            user-select: none;
         }
 
         .dot {
@@ -104,6 +107,35 @@
 
         .dot.err {
             background: var(--error);
+        }
+
+        /* Server menu */
+        .status-menu {
+            position: absolute;
+            top: 54px;
+            right: 12px;
+            min-width: 260px;
+            padding: 8px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+
+        .menu-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .caret {
+            opacity: 0.7;
         }
 
         .tabs {
@@ -346,9 +378,15 @@
                     <div id="subtitle" class="subtitle">Connecting to server…</div>
                 </div>
             </div>
-            <div class="status" id="status">
+            <div class="status" id="status" role="button" tabindex="0" title="Click to switch server">
                 <span class="dot" id="statusDot"></span>
                 <span id="statusText">Offline</span>
+                <span class="caret" aria-hidden="true">▾</span>
+            </div>
+            <div id="serverMenu" class="status-menu hidden" role="menu" aria-label="Server selection">
+                <div class="menu-item" id="serverDefaultBtn" role="menuitem">Use default server (auto)</div>
+                <div class="menu-item" id="serverCustomBtn" role="menuitem">Use custom server…</div>
+                <div class="note" id="serverMenuNote" style="margin-top:6px; padding: 0 4px;"></div>
             </div>
         </header>
 
@@ -430,6 +468,7 @@
         // --- Elements ---
         const statusDot = $('#statusDot');
         const statusText = $('#statusText');
+        const statusEl = $('#status');
         const subtitle = $('#subtitle');
         const loginPanel = $('#loginPanel');
         const accessKeyEl = $('#accessKey');
@@ -450,6 +489,11 @@
         // Debug elements
         const debugPanel = $('#debugPanel');
         const debugLog = $('#debugLog');
+        // Server switcher
+        const serverMenu = $('#serverMenu');
+        const serverDefaultBtn = $('#serverDefaultBtn');
+        const serverCustomBtn = $('#serverCustomBtn');
+        const serverMenuNote = $('#serverMenuNote');
 
         // --- Local storage keys ---
         const STORE = {
@@ -457,6 +501,8 @@
             installed: 'mb_installed_programs', // { [name]: downloadedFileName }
             urls: 'mb_download_urls',          // { [name]: url }
             updates: 'mb_update_flags',        // { [name]: bool }
+            serverMode: 'mb_server_mode',      // 'default' | 'custom'
+            wsOverride: 'mb_ws_override',      // string WebSocket URL
         };
 
         // JSON storage helpers
@@ -478,6 +524,8 @@
             connecting: false,
             authed: false,
             authTimer: null,
+            serverMode: load(STORE.serverMode, 'default'),
+            wsOverride: load(STORE.wsOverride, ''),
         };
 
         const isDebug = /[?&]debug=1/.test(location.search);
@@ -499,6 +547,7 @@
             if (kind === 'ok') statusDot.classList.add('ok');
             if (kind === 'err') statusDot.classList.add('err');
             statusText.textContent = text;
+            updateStatusTooltip();
         }
 
         function showLogin() {
@@ -527,6 +576,60 @@
             if (!(e.target instanceof HTMLElement)) return;
             const btn = e.target.closest('.tab-btn');
             if (btn) switchTab(btn.dataset.tab);
+        });
+
+        // --- Server switcher UI ---
+        function toggleServerMenu(show) {
+            const willShow = typeof show === 'boolean' ? show : serverMenu.classList.contains('hidden');
+            serverMenu.classList.toggle('hidden', !willShow);
+            if (willShow) updateServerMenuNote();
+        }
+
+        function updateServerMenuNote() {
+            const mode = state.serverMode === 'custom' ? `Custom: ${state.wsOverride || '(not set)'}` : 'Default (auto)';
+            if (serverMenuNote) serverMenuNote.textContent = `Current server: ${mode}`;
+        }
+
+        function updateStatusTooltip() {
+            const mode = state.serverMode === 'custom' ? `Custom: ${state.wsOverride || '(not set)'}` : 'Default (auto)';
+            if (statusEl) statusEl.title = `Server: ${mode}. Click to change`;
+        }
+
+        statusEl.addEventListener('click', (e) => { e.stopPropagation(); toggleServerMenu(); });
+        statusEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleServerMenu(); } });
+        document.addEventListener('click', (e) => {
+            if (!serverMenu.classList.contains('hidden')) {
+                const t = e.target;
+                if (!(t instanceof Node)) return;
+                if (!serverMenu.contains(t) && !statusEl.contains(t)) toggleServerMenu(false);
+            }
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleServerMenu(false); });
+
+        serverDefaultBtn.addEventListener('click', () => {
+            if (state.serverMode !== 'default') {
+                state.serverMode = 'default'; save(STORE.serverMode, state.serverMode);
+                toggleServerMenu(false);
+                reconnectToServer(true);
+            } else {
+                toggleServerMenu(false);
+            }
+        });
+
+        serverCustomBtn.addEventListener('click', () => {
+            const input = prompt('Enter WebSocket URL (ws:// or wss://):', state.wsOverride || 'wss://');
+            if (!input) return;
+            const url = input.trim();
+            if (!/^wss?:\/\//i.test(url)) {
+                alert('Please enter a valid WebSocket URL starting with ws:// or wss://');
+                return;
+            }
+            state.serverMode = 'custom';
+            state.wsOverride = url;
+            save(STORE.serverMode, state.serverMode);
+            save(STORE.wsOverride, state.wsOverride);
+            toggleServerMenu(false);
+            reconnectToServer(true);
         });
 
         loginBtn.addEventListener('click', tryLogin);
@@ -675,18 +778,22 @@
         // --- WebSocket connection ---
         async function init() {
             setStatus('', 'Resolving server…');
-            const serverText = await fetchServerLocation();
-            if (!serverText) {
+            const wsUrl = await resolveWsUrl();
+            if (!wsUrl) {
                 setStatus('err', 'Server location unavailable');
                 subtitle.textContent = 'Server location unavailable';
                 showLogin();
                 return;
             }
 
-            let wsUrl = serverText.trim();
-
-            state.wsUrl = wsUrl;
+            state.wsUrl = wsUrl.trim();
             connectWS();
+        }
+
+        async function resolveWsUrl() {
+            if (state.serverMode === 'custom' && state.wsOverride) return state.wsOverride;
+            const serverText = await fetchServerLocation();
+            return (serverText || '').trim();
         }
 
         async function fetchServerLocation() {
@@ -736,6 +843,19 @@
             } catch (e) {
                 state.connecting = false; setStatus('err', 'Failed to connect');
                 setTimeout(connectWS, 1200);
+            }
+        }
+
+        function reconnectToServer(forceResolve = false) {
+            try { if (state.ws) state.ws.close(); } catch { }
+            if (forceResolve) {
+                (async () => {
+                    const url = await resolveWsUrl();
+                    if (url) { state.wsUrl = url; connectWS(); }
+                    else { setStatus('err', 'Server location unavailable'); }
+                })();
+            } else {
+                connectWS();
             }
         }
 
