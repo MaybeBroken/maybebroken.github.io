@@ -706,9 +706,13 @@
             setStatus('', 'Connecting…');
             try {
                 const pageIsSecure = location.protocol === 'https:';
-                if (pageIsSecure && wsUrl.startsWith('ws://')) wsUrl = 'wss://' + wsUrl.slice('ws://'.length);
-                console.log('Updating WS URL to', wsUrl);
-            } catch { }
+                if (pageIsSecure && state.wsUrl.startsWith('ws://')) {
+                    state.wsUrl = 'wss://' + state.wsUrl.slice('ws://'.length);
+                }
+                console.log('Using WS URL:', state.wsUrl);
+            } catch {
+                console.log('Failed to update WS URL');
+            }
             try {
                 const ws = new WebSocket(state.wsUrl);
                 state.ws = ws;
