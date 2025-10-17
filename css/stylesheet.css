@@ -1,0 +1,105 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    background-color: transparent;
+}
+
+/* Prevent layout overflow by default */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+#background_canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    border: none;
+    /* remove any visible border */
+    background-color: #000000;
+    /* match canvas base fill so blurred edges blend */
+    filter: blur(15px) saturate(1.08);
+    -webkit-filter: blur(15px) saturate(1.08);
+    transform: translateZ(0);
+    will-change: transform;
+    pointer-events: none;
+}
+
+.subtitle_text {
+    font-size: 1.3em;
+    margin-left: 0px;
+    margin-right: 5px;
+    color: white;
+}
+
+.subtitle_button {
+    font-size: 1.3em;
+    margin-left: 2px;
+    margin-right: 0px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.subtitle_button:hover {
+    text-decoration: underline;
+    color: #23aeff;
+}
+
+.spacer {
+    height: 200px;
+    width: 100%;
+}
+
+
+.flex_row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.root {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 100vh;
+    width: 100vw;
+    font-family: "rubik";
+    color: white;
+    background-color: transparent;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.homepage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.centerblock {
+    max-width: 800px;
+    width: 100%;
+}
