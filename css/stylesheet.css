@@ -21,6 +21,18 @@ body {
     box-sizing: border-box;
 }
 
+
+.shader_credits {
+    position: fixed;
+    bottom: 5px;
+    right: 30px;
+    font-size: 0.7em;
+    color: white;
+    opacity: 0.25;
+    z-index: 10;
+    pointer-events: none;
+}
+
 #background_canvas {
     position: fixed;
     top: 0;
@@ -31,9 +43,6 @@ body {
     border: none;
     /* remove any visible border */
     background-color: #000000;
-    /* match canvas base fill so blurred edges blend */
-    filter: blur(60px) saturate(1.08);
-    -webkit-filter: blur(60px) saturate(1.08);
     transform: translateZ(0);
     will-change: transform;
     pointer-events: none;
@@ -61,7 +70,7 @@ body {
 }
 
 .spacer {
-    height: 200px;
+    height: 2000px;
     width: 100%;
 }
 
